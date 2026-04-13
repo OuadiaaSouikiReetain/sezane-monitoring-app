@@ -1,0 +1,21 @@
+:root {
+  --color-bg: #0B0F19;
+  --color-surface: #0F172A;
+  --color-card: #111827;
+  --color-elevated: #1A2234;
+  --color-primary: #6366F1;
+  --color-primary-light: #818CF8;
+  --color-primary-dark: #4F46E5;
+  --color-success: #22C55E;
+  --color-warning: #F59E0B;
+  --color-danger: #EF4444;
+  --color-info: #38BDF8;
+  /* chart colors */
+  --chart-primary: #6366F1;
+  --chart-success: #22C55E;
+  --chart-warning: #F59E0B;
+  --chart-danger: #EF4444;
+  --chart-info: #38BDF8;
+  /* spacing */
+  --page-padding: 1.5rem;
+}

@@ -1,0 +1,34 @@
+version: '3.9'
+
+# Lance Redis + Celery Worker + Celery Beat en local
+# Django lui-même tourne séparément avec : python manage.py runserver
+
+services:
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  celery-worker:
+    build: .
+    command: celery -A config.celery worker --loglevel=info
+    env_file: .env
+    depends_on:
+      - redis
+    volumes:
+      - .:/app
+
+  celery-beat:
+    build: .
+    command: celery -A config.celery beat --loglevel=info
+    env_file: .env
+    depends_on:
+      - redis
+    volumes:
+      - .:/app
+
+volumes:
+  redis_data:
