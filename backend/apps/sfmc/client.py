@@ -47,6 +47,7 @@ def get_token() -> str:
                 **({'account_id': settings.SFMC_ACCOUNT_ID} if settings.SFMC_ACCOUNT_ID else {}),
             },
             timeout=15,
+            verify=False,
         )
         response.raise_for_status()
         data = response.json()
@@ -88,10 +89,10 @@ def sfmc_get(path: str, params: dict = None) -> dict:
     """
     url = _build_url(path)
     try:
-        resp = requests.get(url, headers=_headers(), params=params, timeout=30)
+        resp = requests.get(url, headers=_headers(), params=params, timeout=30, verify=False)
         if resp.status_code == 401:
             invalidate_token()
-            resp = requests.get(url, headers=_headers(), params=params, timeout=30)
+            resp = requests.get(url, headers=_headers(), params=params, timeout=30, verify=False)
         resp.raise_for_status()
         return resp.json()
     except requests.RequestException as e:
@@ -102,10 +103,10 @@ def sfmc_post(path: str, payload: dict) -> dict:
     """POST vers l'API REST SFMC."""
     url = _build_url(path)
     try:
-        resp = requests.post(url, headers=_headers(), json=payload, timeout=30)
+        resp = requests.post(url, headers=_headers(), json=payload, timeout=30, verify=False)
         if resp.status_code == 401:
             invalidate_token()
-            resp = requests.post(url, headers=_headers(), json=payload, timeout=30)
+            resp = requests.post(url, headers=_headers(), json=payload, timeout=30, verify=False)
         resp.raise_for_status()
         return resp.json()
     except requests.RequestException as e:
@@ -116,10 +117,10 @@ def sfmc_patch(path: str, payload: dict) -> dict:
     """PATCH vers l'API REST SFMC."""
     url = _build_url(path)
     try:
-        resp = requests.patch(url, headers=_headers(), json=payload, timeout=30)
+        resp = requests.patch(url, headers=_headers(), json=payload, timeout=30, verify=False)
         if resp.status_code == 401:
             invalidate_token()
-            resp = requests.patch(url, headers=_headers(), json=payload, timeout=30)
+            resp = requests.patch(url, headers=_headers(), json=payload, timeout=30, verify=False)
         resp.raise_for_status()
         return resp.json()
     except requests.RequestException as e:

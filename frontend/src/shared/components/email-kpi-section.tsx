@@ -155,20 +155,18 @@ export function EmailKpiSection({ data, isLoading = false, isError = false }: Em
         </p>
       )}
 
-      {/* No data */}
-      {!isLoading && !isError && data && !data.data_available && (
+      {/* No email activities (different from no data) */}
+      {!isLoading && !isError && data && data.source === 'no_email_activities' && (
         <div className="flex flex-col items-center gap-1.5 py-5">
           <MousePointerClick size={18} className="text-ink-faint" />
           <p className="text-[11px] text-ink-muted">
-            {data.source === 'no_email_activities'
-              ? 'Aucune activité email dans ce composant'
-              : 'Aucune donnée email sur cette période'}
+            Aucune activité email dans ce composant
           </p>
         </div>
       )}
 
-      {/* Data */}
-      {!isLoading && !isError && data?.data_available && (
+      {/* Data (always display if we have data object, regardless of data_available) */}
+      {!isLoading && !isError && data && data.source !== 'no_email_activities' && (
         <>
           {/* Volume pills */}
           <div className="grid grid-cols-3 gap-2 mb-3">

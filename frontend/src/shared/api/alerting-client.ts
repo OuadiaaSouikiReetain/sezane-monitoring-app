@@ -9,9 +9,9 @@ export const alertingApi = {
   getAlert: (id: number) =>
     httpClient.get<Alert>(`/alerts/${id}/`),
   getAnomalies: (params?: { severity?: string }) =>
-    httpClient.get<PaginatedResponse<Anomaly>>('/anomalies/', { params }),
+    httpClient.get<PaginatedResponse<Anomaly>>('/monitoring/anomalies/', { params }),
   getAnomaly: (id: number) =>
-    httpClient.get<Anomaly>(`/anomalies/${id}/`),
+    httpClient.get<Anomaly>(`/monitoring/anomalies/${id}/`),
   acknowledgeAlert: (id: number) =>
     httpClient.post<Alert>(`/alerts/${id}/acknowledge/`),
   resolveAlert: (id: number) =>

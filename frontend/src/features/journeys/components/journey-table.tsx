@@ -5,9 +5,11 @@ import type { Journey } from '@/entities/journey/model'
 interface JourneyTableProps {
   journeys: Journey[]
   total: number
+  onSelectJourney?: (journey: Journey) => void
+  selectedId?: number | null
 }
 
-export function JourneyTable({ journeys, total }: JourneyTableProps) {
+export function JourneyTable({ journeys, total, onSelectJourney, selectedId }: JourneyTableProps) {
   return (
     <div className="card overflow-hidden">
       <div className="px-5 py-4 border-b border-border flex items-center justify-between">
@@ -27,13 +29,16 @@ export function JourneyTable({ journeys, total }: JourneyTableProps) {
             {journeys.map((j) => (
               <tr
                 key={j.id}
-                className={
+                onClick={() => onSelectJourney?.(j)}
+                className={`cursor-pointer transition-colors hover:bg-elevated ${
+                  selectedId === j.id ? 'bg-elevated' : ''
+                } ${
                   j.status === 'critical'
                     ? 'border-l-danger'
                     : j.status === 'degraded'
                     ? 'border-l-warning'
                     : ''
-                }
+                }`}
               >
                 <td>
                   <span className="font-semibold text-ink">{j.name}</span>

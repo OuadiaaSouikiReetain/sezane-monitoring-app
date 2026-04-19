@@ -136,44 +136,38 @@ export function ExecutionHistorySection({
         </div>
       )}
 
-      {/* No data */}
-      {!isLoading && !isError && items.length === 0 && (
-        <div className="flex flex-col items-center gap-1.5 py-6">
-          <Database size={20} className="text-ink-faint" />
-          <p className="text-[11px] text-ink-muted text-center">
-            Aucun run dans ExecutionLog
-          </p>
-          <p className="text-[10px] text-ink-faint text-center">
-            Les données apparaîtront après le premier run de la Query Activity SFMC
-          </p>
-        </div>
-      )}
+      {/* Rows (empty or with data) */}
+      <div className="space-y-1.5">
+        {sorted.map((row) => (
+          <div
+            key={row.id_log}
+            className="flex items-center gap-2 p-2 rounded-lg bg-bg border border-border hover:border-border-strong transition-colors"
+          >
+            <StatusBadge status={row.status} />
 
-      {/* Rows */}
-      {!isLoading && !isError && sorted.length > 0 && (
-        <div className="space-y-1.5">
-          {sorted.map((row) => (
-            <div
-              key={row.id_log}
-              className="flex items-center gap-2 p-2 rounded-lg bg-bg border border-border hover:border-border-strong transition-colors"
-            >
-              <StatusBadge status={row.status} />
+            <span className="text-[11px] text-ink-sub font-mono shrink-0">
+              {fmtDate(row.start_time)}
+            </span>
 
-              <span className="text-[11px] text-ink-sub font-mono shrink-0">
-                {fmtDate(row.start_time)}
-              </span>
+            <span className="flex-1 text-[11px] text-ink-muted truncate min-w-0">
+              {row.activity_name ?? row.triggered_by ?? '—'}
+            </span>
 
-              <span className="flex-1 text-[11px] text-ink-muted truncate min-w-0">
-                {row.activity_name ?? row.triggered_by ?? '—'}
-              </span>
+            <span className="text-[11px] text-ink-muted font-mono shrink-0">
+              {fmtDuration(row.duration_seconds)}
+            </span>
+          </div>
+        ))}
 
-              <span className="text-[11px] text-ink-muted font-mono shrink-0">
-                {fmtDuration(row.duration_seconds)}
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
+        {/* Empty state message only when list is truly empty */}
+        {!isLoading && !isError && sorted.length === 0 && (
+          <div className="flex flex-col items-center gap-1.5 py-4 text-center">
+            <p className="text-[10px] text-ink-faint italic">
+              Pas de données d'exécution disponibles
+            </p>
+          </div>
+        )}
+      </div>
     </div>
   )
 }

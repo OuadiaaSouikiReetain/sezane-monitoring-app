@@ -103,7 +103,7 @@ def _build_stats(sent, delivered, opens, unique_opens, clicks, unique_clicks,
         'bounce_rate_status':      _rate_status('bounce_rate', bounce_rate),
         'delivery_rate_status':    _rate_status('delivery_rate', delivery),
         'unsubscribe_rate_status': _rate_status('unsubscribe_rate', unsub_rate),
-        'data_available': sent > 0,
+        'data_available': True,
         'source': source,
     }
 
@@ -269,8 +269,7 @@ def get_journey_email_kpis(journey_detail: dict, days_back: int = 30) -> dict:
             totals[k] += stats.get(k, 0)
         per_act.append({'name': ea['name'], 'stats': stats})
 
-    result = _build_stats(**totals, source='aggregated') if has_data \
-             else _empty_stats('no_tracking_data')
+    result = _build_stats(**totals, source='aggregated')
     result.update({'email_activities': per_act, 'days_back': days_back})
     return result
 

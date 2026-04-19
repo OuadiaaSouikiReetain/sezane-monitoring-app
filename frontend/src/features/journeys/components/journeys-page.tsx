@@ -2,8 +2,11 @@ import { useState } from 'react'
 import { useJourneys } from '../hooks/use-journeys'
 import { JourneyFiltersBar } from './journey-filters'
 import { JourneyTable } from './journey-table'
+import { JourneyDrawer } from './journey-drawer'
 import { journeys as mockJourneys } from '@/mocks/data'
 import type { JourneyFilters } from '../types/journey.types'
+import type { Journey } from '@/entities/journey/model'
+import type { SfmcJourneyEnriched } from '../types/sfmc-journey.types'
 
 interface StatPillProps {
   value: number
@@ -34,6 +37,7 @@ function StatPill({ value, label, color }: StatPillProps) {
 
 export function JourneysPage() {
   const [filters, setFilters] = useState<JourneyFilters>({ bu: 'All', status: 'All' })
+  const [selectedJourney, setSelectedJourney] = useState<Journey | null>(null)
 
   const { data: queryResult } = useJourneys(filters)
   const allJourneys = queryResult?.results ?? mockJourneys
@@ -65,7 +69,13 @@ export function JourneysPage() {
       />
 
       {/* Table */}
-      <JourneyTable journeys={filteredJourneys} total={allJourneys.length} />
+      <JourneyTable journeys={filteredJourneys} total={allJourneys.length} onSelectJourney={setSelectedJourney} selectedId={selectedJourney?.id ?? null} />
+
+      {/* KPI Detail Drawer */}
+      <JourneyDrawer
+        journey={selectedJourney ? (selectedJourney as unknown as SfmcJourneyEnriched) : null}
+        onClose={() => setSelectedJourney(null)}
+      />
     </div>
   )
 }
