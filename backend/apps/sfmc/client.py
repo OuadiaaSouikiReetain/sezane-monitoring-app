@@ -74,12 +74,19 @@ def _headers() -> dict:
     }
 
 
+def _build_url(path: str) -> str:
+    """Construit l'URL complète en évitant les doubles slashes."""
+    base = settings.SFMC_REST_BASE_URI.rstrip('/')
+    path = path if path.startswith('/') else f'/{path}'
+    return f"{base}{path}"
+
+
 def sfmc_get(path: str, params: dict = None) -> dict:
     """
     GET vers l'API REST SFMC.
     path : chemin relatif ex. '/automation/v1/automations'
     """
-    url = f"{settings.SFMC_REST_BASE_URI}{path}"
+    url = _build_url(path)
     try:
         resp = requests.get(url, headers=_headers(), params=params, timeout=30)
         if resp.status_code == 401:
@@ -93,7 +100,7 @@ def sfmc_get(path: str, params: dict = None) -> dict:
 
 def sfmc_post(path: str, payload: dict) -> dict:
     """POST vers l'API REST SFMC."""
-    url = f"{settings.SFMC_REST_BASE_URI}{path}"
+    url = _build_url(path)
     try:
         resp = requests.post(url, headers=_headers(), json=payload, timeout=30)
         if resp.status_code == 401:
@@ -107,7 +114,7 @@ def sfmc_post(path: str, payload: dict) -> dict:
 
 def sfmc_patch(path: str, payload: dict) -> dict:
     """PATCH vers l'API REST SFMC."""
-    url = f"{settings.SFMC_REST_BASE_URI}{path}"
+    url = _build_url(path)
     try:
         resp = requests.patch(url, headers=_headers(), json=payload, timeout=30)
         if resp.status_code == 401:

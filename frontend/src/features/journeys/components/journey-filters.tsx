@@ -11,7 +11,7 @@ interface JourneyFiltersProps {
 export function JourneyFiltersBar({ filters, onFilter, resultCount }: JourneyFiltersProps) {
   return (
     <div className="card p-4 flex items-center gap-3 flex-wrap">
-      <div className="flex items-center gap-2 text-[11px] text-slate-500 font-semibold uppercase tracking-wide pr-3 border-r border-white/[0.06]">
+      <div className="flex items-center gap-2 text-[11px] text-ink-muted font-semibold uppercase tracking-wide pr-3 border-r border-border">
         <SlidersHorizontal size={13} />
         Filters
       </div>
@@ -28,7 +28,7 @@ export function JourneyFiltersBar({ filters, onFilter, resultCount }: JourneyFil
         ))}
       </div>
 
-      <div className="w-px h-4 bg-white/[0.06] mx-1" />
+      <div className="w-px h-4 bg-border mx-1" />
 
       <div className="flex gap-1.5 flex-wrap">
         {STATUSES.map((s) => (
@@ -42,7 +42,7 @@ export function JourneyFiltersBar({ filters, onFilter, resultCount }: JourneyFil
         ))}
       </div>
 
-      <span className="ml-auto text-[11px] text-slate-600">
+      <span className="ml-auto text-[11px] text-ink-muted">
         {resultCount} result{resultCount !== 1 ? 's' : ''}
       </span>
     </div>

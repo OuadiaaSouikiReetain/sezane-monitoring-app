@@ -12,10 +12,10 @@ export function AutomationsPage() {
   const critical   = automations.filter((a) => a.status === 'critical').length
 
   const stats = [
-    { v: automations.length, label: 'Total Jobs',  icon: Play,          cls: 'text-primary-light bg-primary/10 border-primary/20' },
-    { v: totalOk,            label: 'Running OK',  icon: CheckCircle,   cls: 'text-success bg-success/10 border-success/20' },
-    { v: withDelay,          label: 'With Delays', icon: Clock,         cls: 'text-warning bg-warning/10 border-warning/20' },
-    { v: critical,           label: 'Critical',    icon: AlertTriangle, cls: 'text-danger bg-danger/10 border-danger/20' },
+    { v: automations.length, label: 'Total Jobs',  icon: Play,          cls: 'text-primary bg-primary-bg border-primary-border' },
+    { v: totalOk,            label: 'Running OK',  icon: CheckCircle,   cls: 'text-success bg-success-bg border-success-border' },
+    { v: withDelay,          label: 'With Delays', icon: Clock,         cls: 'text-warning bg-warning-bg border-warning-border' },
+    { v: critical,           label: 'Critical',    icon: AlertTriangle, cls: 'text-danger bg-danger-bg border-danger-border' },
   ]
 
   return (
@@ -28,8 +28,8 @@ export function AutomationsPage() {
               <Icon size={18} />
             </div>
             <div>
-              <p className="text-2xl font-bold text-white leading-none">{v}</p>
-              <p className="text-[11px] text-slate-500 mt-0.5">{label}</p>
+              <p className="text-2xl font-bold text-ink leading-none">{v}</p>
+              <p className="text-[11px] text-ink-muted mt-0.5">{label}</p>
             </div>
           </div>
         ))}
@@ -37,7 +37,7 @@ export function AutomationsPage() {
 
       {/* Table */}
       <div className="card overflow-hidden">
-        <div className="px-5 py-4 border-b border-white/[0.06] flex items-center justify-between">
+        <div className="px-5 py-4 border-b border-border flex items-center justify-between">
           <p className="section-title">Automation Jobs</p>
           <span className="section-sub">{automations.length} jobs monitored</span>
         </div>
@@ -57,31 +57,31 @@ export function AutomationsPage() {
                   className={a.delay ? 'border-l-warning' : a.status === 'critical' ? 'border-l-danger' : ''}
                 >
                   <td>
-                    <span className="font-semibold text-slate-200">{a.name}</span>
+                    <span className="font-semibold text-ink">{a.name}</span>
                   </td>
                   <td>
-                    <div className="flex items-center gap-1.5 text-[11px] text-slate-400 bg-white/[0.03] border border-white/[0.06] px-2 py-1 rounded-lg w-fit">
-                      <Clock size={11} className="text-slate-600" />
+                    <div className="flex items-center gap-1.5 text-[11px] text-ink-muted bg-elevated border border-border px-2 py-1 rounded-lg w-fit">
+                      <Clock size={11} className="text-ink-faint" />
                       {a.frequency}
                     </div>
                   </td>
                   <td>
-                    <span className="text-[12px] text-slate-400">{a.lastRun}</span>
+                    <span className="text-[12px] text-ink-muted">{a.lastRun}</span>
                   </td>
                   <td>
-                    <span className="font-mono text-[12px] text-slate-300 tabular-nums">{a.duration}</span>
+                    <span className="font-mono text-[12px] text-ink-sub tabular-nums">{a.duration}</span>
                   </td>
                   <td>
                     <StatusBadge status={a.status} />
                   </td>
                   <td>
                     {a.delay ? (
-                      <div className="flex items-center gap-1.5 text-[11px] font-semibold text-warning bg-warning/10 border border-warning/20 px-2 py-0.5 rounded-full w-fit">
+                      <div className="flex items-center gap-1.5 text-[11px] font-semibold text-warning bg-warning-bg border border-warning-border px-2 py-0.5 rounded-full w-fit">
                         <AlertTriangle size={11} />
                         Detected
                       </div>
                     ) : (
-                      <span className="text-[11px] text-slate-700">None</span>
+                      <span className="text-[11px] text-ink-faint">None</span>
                     )}
                   </td>
                 </tr>

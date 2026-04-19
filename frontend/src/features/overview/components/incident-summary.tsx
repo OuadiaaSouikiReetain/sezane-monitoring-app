@@ -19,7 +19,7 @@ export function IncidentSummary({ anomalies }: IncidentSummaryProps) {
         </div>
         <Link
           to="/anomalies"
-          className="flex items-center gap-1 text-[11px] text-primary hover:text-primary-light transition-colors"
+          className="flex items-center gap-1 text-[11px] text-ink-muted hover:text-ink transition-colors"
         >
           View all <ArrowRight size={11} />
         </Link>
@@ -28,16 +28,16 @@ export function IncidentSummary({ anomalies }: IncidentSummaryProps) {
         {anomalies.slice(0, 4).map((a) => (
           <div
             key={a.id}
-            className={`flex items-start gap-3 p-3 rounded-xl bg-white/[0.02] border border-white/[0.04]
-              transition-colors hover:bg-white/[0.04] cursor-default
+            className={`flex items-start gap-3 p-3 rounded-xl bg-bg border border-border
+              transition-colors hover:bg-elevated cursor-default
               ${a.severity === 'critical' ? 'border-l-danger' : 'border-l-warning'}`}
           >
             <StatusBadge status={a.severity} />
             <div className="flex-1 min-w-0">
-              <p className="text-[12px] font-semibold text-slate-200 truncate">{a.type}</p>
-              <p className="text-[11px] text-slate-500 truncate mt-0.5">{a.description}</p>
+              <p className="text-[12px] font-semibold text-ink truncate">{a.type}</p>
+              <p className="text-[11px] text-ink-muted truncate mt-0.5">{a.description}</p>
             </div>
-            <span className="text-[10px] text-slate-600 whitespace-nowrap pt-0.5">{a.time}</span>
+            <span className="text-[10px] text-ink-faint whitespace-nowrap pt-0.5">{a.time}</span>
           </div>
         ))}
       </div>

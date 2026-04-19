@@ -34,8 +34,8 @@ export function HealthChart({ data }: HealthChartProps) {
           </ResponsiveContainer>
           {/* Center label */}
           <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-            <span className="text-xl font-bold text-white">{total}</span>
-            <span className="text-[10px] text-slate-500">total</span>
+            <span className="text-xl font-bold text-ink">{total}</span>
+            <span className="text-[10px] text-ink-muted">total</span>
           </div>
         </div>
       </div>
@@ -44,9 +44,9 @@ export function HealthChart({ data }: HealthChartProps) {
           <div key={d.name} className="text-center">
             <div className="flex items-center justify-center gap-1 mb-0.5">
               <span className="w-2 h-2 rounded-full" style={{ background: d.color }} />
-              <span className="text-[10px] text-slate-500">{d.name}</span>
+              <span className="text-[10px] text-ink-muted">{d.name}</span>
             </div>
-            <p className="text-base font-bold text-white">{d.value}</p>
+            <p className="text-base font-bold text-ink">{d.value}</p>
           </div>
         ))}
       </div>

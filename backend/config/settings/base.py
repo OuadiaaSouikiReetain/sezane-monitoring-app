@@ -118,6 +118,34 @@ SFMC_AUTH_BASE_URI = config('SFMC_AUTH_BASE_URI')
 SFMC_REST_BASE_URI = config('SFMC_REST_BASE_URI')
 SFMC_ACCOUNT_ID    = config('SFMC_ACCOUNT_ID', default=None)
 
+# ─── Celery Beat Schedule ─────────────────────────────────────────────────────
+from celery.schedules import crontab
+
+CELERY_BEAT_SCHEDULE = {
+    # Sync SFMC → DEs toutes les heures
+    'sync-automations': {
+        'task':     'apps.tasks.sync.sync_automations',
+        'schedule': crontab(minute=0),          # toutes les heures pile
+    },
+    'sync-journeys': {
+        'task':     'apps.tasks.sync.sync_journeys',
+        'schedule': crontab(minute=5),          # toutes les heures à H+5
+    },
+    # Monitoring
+    'evaluate-rules': {
+        'task':     'apps.tasks.monitoring.evaluate_all_rules',
+        'schedule': crontab(minute='*/30'),     # toutes les 30 minutes
+    },
+    'check-missing-runs': {
+        'task':     'apps.tasks.monitoring.check_missing_runs',
+        'schedule': crontab(minute=10),         # toutes les heures à H+10
+    },
+    'calculate-kpis': {
+        'task':     'apps.tasks.monitoring.calculate_complex_kpis',
+        'schedule': crontab(minute=15),         # toutes les heures à H+15
+    },
+}
+
 # ─── Notifications ────────────────────────────────────────────────────────────
 SLACK_DEFAULT_WEBHOOK_URL = config('SLACK_DEFAULT_WEBHOOK_URL', default='')
 ALERT_FROM_EMAIL          = config('ALERT_FROM_EMAIL', default='monitoring@company.com')

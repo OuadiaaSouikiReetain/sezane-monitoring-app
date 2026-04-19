@@ -15,7 +15,7 @@ export function AutomationDetailPage() {
   if (isLoading && !fallback) {
     return (
       <div className="space-y-4 animate-pulse">
-        <div className="h-8 bg-white/[0.05] rounded-xl w-64" />
+        <div className="h-8 bg-elevated rounded-xl w-64" />
         <div className="card p-6 h-48" />
       </div>
     )
@@ -24,9 +24,9 @@ export function AutomationDetailPage() {
   if (!data) {
     return (
       <div className="flex flex-col items-center justify-center py-20">
-        <Cog size={40} className="text-slate-700 mb-4" />
-        <p className="text-slate-400 font-semibold">Automation not found</p>
-        <Link to="/automations" className="mt-4 text-[12px] text-primary hover:text-primary-light">
+        <Cog size={40} className="text-ink-faint mb-4" />
+        <p className="text-ink-muted font-semibold">Automation not found</p>
+        <Link to="/automations" className="mt-4 text-[12px] text-primary hover:text-primary-dark">
           ← Back to automations
         </Link>
       </div>
@@ -37,7 +37,7 @@ export function AutomationDetailPage() {
     <div className="space-y-5 animate-slide-up">
       <Link
         to="/automations"
-        className="inline-flex items-center gap-2 text-[12px] text-slate-500 hover:text-slate-200 transition-colors"
+        className="inline-flex items-center gap-2 text-[12px] text-ink-muted hover:text-ink transition-colors"
       >
         <ArrowLeft size={13} />
         Back to automations
@@ -47,30 +47,30 @@ export function AutomationDetailPage() {
         <div className="flex items-start justify-between mb-6">
           <div>
             <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/25 flex items-center justify-center">
-                <Cog size={18} className="text-primary-light" />
+              <div className="w-10 h-10 rounded-xl bg-primary-bg border border-primary-border flex items-center justify-center">
+                <Cog size={18} className="text-primary" />
               </div>
-              <h2 className="text-[18px] font-bold text-white">{data.name}</h2>
+              <h2 className="text-[18px] font-bold text-ink">{data.name}</h2>
             </div>
-            <p className="text-[13px] text-slate-500">Schedule: {data.frequency}</p>
+            <p className="text-[13px] text-ink-muted">Schedule: {data.frequency}</p>
           </div>
           <StatusBadge status={data.status} size="md" />
         </div>
 
         <div className="grid grid-cols-3 gap-4">
-          <div className="p-4 bg-white/[0.03] rounded-xl border border-white/[0.06]">
-            <p className="text-[11px] text-slate-500 uppercase tracking-wide font-semibold mb-2">Last Run</p>
+          <div className="p-4 bg-elevated rounded-xl border border-border">
+            <p className="text-[11px] text-ink-muted uppercase tracking-wide font-semibold mb-2">Last Run</p>
             <div className="flex items-center gap-2">
-              <Clock size={14} className="text-slate-500" />
-              <p className="text-[18px] font-bold text-white">{data.lastRun}</p>
+              <Clock size={14} className="text-ink-muted" />
+              <p className="text-[18px] font-bold text-ink">{data.lastRun}</p>
             </div>
           </div>
-          <div className="p-4 bg-white/[0.03] rounded-xl border border-white/[0.06]">
-            <p className="text-[11px] text-slate-500 uppercase tracking-wide font-semibold mb-2">Duration</p>
-            <p className="text-[18px] font-bold text-white font-mono">{data.duration}</p>
+          <div className="p-4 bg-elevated rounded-xl border border-border">
+            <p className="text-[11px] text-ink-muted uppercase tracking-wide font-semibold mb-2">Duration</p>
+            <p className="text-[18px] font-bold text-ink font-mono">{data.duration}</p>
           </div>
-          <div className="p-4 bg-white/[0.03] rounded-xl border border-white/[0.06]">
-            <p className="text-[11px] text-slate-500 uppercase tracking-wide font-semibold mb-2">Delay Detected</p>
+          <div className="p-4 bg-elevated rounded-xl border border-border">
+            <p className="text-[11px] text-ink-muted uppercase tracking-wide font-semibold mb-2">Delay Detected</p>
             {data.delay ? (
               <div className="flex items-center gap-2 text-warning">
                 <AlertTriangle size={16} />

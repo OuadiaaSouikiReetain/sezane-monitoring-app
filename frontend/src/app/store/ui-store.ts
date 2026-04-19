@@ -16,12 +16,19 @@ export const useUiStore = create<UiState>()(
     (set) => ({
       sidebarCollapsed: false,
       notificationCount: 3,
-      theme: 'dark',
+      theme: 'light',
       toggleSidebar: () => set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
       setSidebarCollapsed: (v) => set({ sidebarCollapsed: v }),
       setNotificationCount: (n) => set({ notificationCount: n }),
       setTheme: (t) => set({ theme: t }),
     }),
-    { name: 'sfmc-ui' }
+    {
+      name: 'sfmc-ui',
+      // Never persist theme — always start with the default 'light'
+      partialize: (state) => ({
+        sidebarCollapsed: state.sidebarCollapsed,
+        notificationCount: state.notificationCount,
+      }),
+    }
   )
 )

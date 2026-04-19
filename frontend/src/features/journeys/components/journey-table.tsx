@@ -10,7 +10,7 @@ interface JourneyTableProps {
 export function JourneyTable({ journeys, total }: JourneyTableProps) {
   return (
     <div className="card overflow-hidden">
-      <div className="px-5 py-4 border-b border-white/[0.06] flex items-center justify-between">
+      <div className="px-5 py-4 border-b border-border flex items-center justify-between">
         <p className="section-title">Journey List</p>
         <span className="section-sub">{journeys.length} / {total} shown</span>
       </div>
@@ -36,27 +36,27 @@ export function JourneyTable({ journeys, total }: JourneyTableProps) {
                 }
               >
                 <td>
-                  <span className="font-semibold text-slate-200">{j.name}</span>
+                  <span className="font-semibold text-ink">{j.name}</span>
                 </td>
                 <td>
-                  <span className="text-[12px] text-slate-400 bg-white/[0.04] px-2 py-0.5 rounded-md border border-white/[0.06]">
+                  <span className="text-[12px] text-ink-muted bg-elevated px-2 py-0.5 rounded-md border border-border">
                     {j.bu}
                   </span>
                 </td>
                 <td>
-                  <span className="text-[12px] text-slate-400">{j.owner}</span>
+                  <span className="text-[12px] text-ink-muted">{j.owner}</span>
                 </td>
                 <td>
                   <StatusBadge status={j.status} />
                 </td>
                 <td>
-                  <span className="font-mono text-[12px] text-slate-300 tabular-nums">
+                  <span className="font-mono text-[12px] text-ink-sub tabular-nums">
                     {j.entries.toLocaleString()}
                   </span>
                 </td>
                 <td>
                   <div className="flex items-center gap-2.5">
-                    <div className="w-20 h-1 bg-white/[0.08] rounded-full overflow-hidden">
+                    <div className="w-20 h-1 bg-border rounded-full overflow-hidden">
                       <div
                         className={`h-full rounded-full transition-all ${getSlaBarColor(j.sla)}`}
                         style={{ width: `${Math.min(j.sla, 100)}%` }}
@@ -69,11 +69,11 @@ export function JourneyTable({ journeys, total }: JourneyTableProps) {
                 </td>
                 <td>
                   {j.anomalies > 0 ? (
-                    <span className="inline-flex items-center justify-center w-6 h-6 rounded-full text-[11px] font-bold bg-danger/15 text-danger border border-danger/25">
+                    <span className="inline-flex items-center justify-center w-6 h-6 rounded-full text-[11px] font-bold bg-danger-bg text-danger border border-danger-border">
                       {j.anomalies}
                     </span>
                   ) : (
-                    <span className="text-[11px] text-slate-700">—</span>
+                    <span className="text-[11px] text-ink-faint">—</span>
                   )}
                 </td>
               </tr>

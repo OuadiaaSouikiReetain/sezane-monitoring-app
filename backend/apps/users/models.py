@@ -25,6 +25,7 @@ class User(AbstractUser):
     )
 
     # On utilise l'email comme identifiant de connexion
+    email = models.EmailField(unique=True, verbose_name='Adresse email')
     USERNAME_FIELD  = 'email'
     REQUIRED_FIELDS = ['username']
 

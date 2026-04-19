@@ -1,21 +1,28 @@
 :root {
-  --color-bg: #0B0F19;
-  --color-surface: #0F172A;
-  --color-card: #111827;
-  --color-elevated: #1A2234;
-  --color-primary: #6366F1;
-  --color-primary-light: #818CF8;
-  --color-primary-dark: #4F46E5;
-  --color-success: #22C55E;
-  --color-warning: #F59E0B;
-  --color-danger: #EF4444;
-  --color-info: #38BDF8;
-  /* chart colors */
-  --chart-primary: #6366F1;
-  --chart-success: #22C55E;
-  --chart-warning: #F59E0B;
-  --chart-danger: #EF4444;
-  --chart-info: #38BDF8;
-  /* spacing */
+  /* Backgrounds */
+  --color-bg:       #F7F8FA;
+  --color-surface:  #FFFFFF;
+  --color-card:     #FFFFFF;
+  --color-elevated: #F3F4F6;
+
+  /* Primary — professional deep blue */
+  --color-primary:       #1D4ED8;
+  --color-primary-light: #3B82F6;
+  --color-primary-dark:  #1E3A8A;
+
+  /* Status */
+  --color-success: #059669;
+  --color-warning: #D97706;
+  --color-danger:  #DC2626;
+  --color-info:    #2563EB;
+
+  /* Chart colors */
+  --chart-primary: #1D4ED8;
+  --chart-success: #059669;
+  --chart-warning: #D97706;
+  --chart-danger:  #DC2626;
+  --chart-info:    #2563EB;
+
+  /* Spacing */
   --page-padding: 1.5rem;
 }

@@ -5,6 +5,14 @@ from .base import *
 
 DEBUG = True
 
+# ─── Auth désactivée en dev ───────────────────────────────────────────────────
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.AllowAny',
+    ],
+}
+
 ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 
 # SQLite en dev — uniquement pour l'auth utilisateurs

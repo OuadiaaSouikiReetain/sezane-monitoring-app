@@ -13,21 +13,21 @@ interface StatPillProps {
 
 function StatPill({ value, label, color }: StatPillProps) {
   const colors = {
-    green:   'bg-success/10 border-success/20',
-    amber:   'bg-warning/10 border-warning/20',
-    red:     'bg-danger/10  border-danger/20',
-    neutral: 'bg-white/[0.04] border-white/[0.06]',
+    green:   'bg-success-bg border-success-border',
+    amber:   'bg-warning-bg border-warning-border',
+    red:     'bg-danger-bg  border-danger-border',
+    neutral: 'bg-elevated border-border',
   }
   const textColors = {
     green:   'text-success',
     amber:   'text-warning',
     red:     'text-danger',
-    neutral: 'text-white',
+    neutral: 'text-ink',
   }
   return (
     <div className={`card-hover rounded-2xl p-4 border ${colors[color]} flex items-center gap-4`}>
       <span className={`text-3xl font-bold tracking-tight ${textColors[color]}`}>{value}</span>
-      <span className="text-[12px] text-slate-500 font-medium leading-tight">{label}</span>
+      <span className="text-[12px] text-ink-muted font-medium leading-tight">{label}</span>
     </div>
   )
 }

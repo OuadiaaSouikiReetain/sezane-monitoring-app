@@ -8,14 +8,14 @@ import { analyticsKpis as mockKpis, performanceTrend as mockTrend } from '@/mock
 
 const TOOLTIP_STYLE = {
   contentStyle: {
-    background: '#1A2234',
-    border: '1px solid rgba(255,255,255,0.08)',
+    background: '#FFFFFF',
+    border: '1px solid #E5E7EB',
     borderRadius: 10,
     fontSize: 12,
-    boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+    boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
   },
-  labelStyle: { color: '#94A3B8', fontWeight: 600 },
-  itemStyle: { color: '#E2E8F0' },
+  labelStyle: { color: '#6B7280', fontWeight: 600 },
+  itemStyle: { color: '#111827' },
   formatter: (v: number) => [`${v}%`],
 }
 
@@ -25,7 +25,7 @@ const BU_METRICS = {
   Germany: { successRate: 96.8, sla: 93.4, delivery: 98.2 },
 }
 
-const LINE_COLORS = { successRate: '#6366F1', deliveryRate: '#22C55E', sla: '#F59E0B' }
+const LINE_COLORS = { successRate: '#111827', deliveryRate: '#059669', sla: '#D97706' }
 const LINE_LABELS: Record<string, string> = { successRate: 'Success Rate', deliveryRate: 'Delivery Rate', sla: 'SLA Performance' }
 
 export function AnalyticsPage() {
@@ -40,14 +40,14 @@ export function AnalyticsPage() {
       {/* KPI Cards */}
       <div className="grid grid-cols-4 gap-4">
         {kpis.map((kpi) => (
-          <div key={kpi.label} className="card-hover rounded-2xl p-5 transition-all duration-200">
-            <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-[0.07em] mb-3">
+          <div key={kpi.label} className="card rounded-2xl p-5 transition-all duration-200 hover:shadow-card-md">
+            <p className="text-[11px] font-semibold text-ink-muted uppercase tracking-[0.07em] mb-3">
               {kpi.label}
             </p>
-            <p className="text-[30px] font-bold text-white leading-none tracking-tight mb-3">{kpi.value}</p>
+            <p className="text-[30px] font-bold text-ink leading-none tracking-tight mb-3">{kpi.value}</p>
             <div
               className={`flex items-center gap-1.5 text-[11px] font-semibold w-fit px-2 py-0.5 rounded-full ${
-                kpi.up ? 'bg-success/[0.12] text-success' : 'bg-danger/[0.12] text-danger'
+                kpi.up ? 'bg-success-bg text-success' : 'bg-danger-bg text-danger'
               }`}
             >
               {kpi.up ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
@@ -67,10 +67,10 @@ export function AnalyticsPage() {
         </div>
         <ResponsiveContainer width="100%" height={280}>
           <LineChart data={trend} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="2 4" stroke="rgba(255,255,255,0.04)" vertical={false} />
-            <XAxis dataKey="week" tick={{ fill: '#475569', fontSize: 11 }} axisLine={false} tickLine={false} />
+            <CartesianGrid strokeDasharray="2 4" stroke="#F3F4F6" vertical={false} />
+            <XAxis dataKey="week" tick={{ fill: '#9CA3AF', fontSize: 11 }} axisLine={false} tickLine={false} />
             <YAxis
-              tick={{ fill: '#475569', fontSize: 11 }}
+              tick={{ fill: '#9CA3AF', fontSize: 11 }}
               axisLine={false}
               tickLine={false}
               domain={[89, 100]}
@@ -79,14 +79,14 @@ export function AnalyticsPage() {
             />
             <ReferenceLine
               y={95}
-              stroke="rgba(239,68,68,0.25)"
+              stroke="#FECACA"
               strokeDasharray="4 4"
-              label={{ value: 'SLA target', fill: '#EF4444', fontSize: 10, position: 'insideBottomRight' }}
+              label={{ value: 'SLA target', fill: '#DC2626', fontSize: 10, position: 'insideBottomRight' }}
             />
             <Tooltip {...TOOLTIP_STYLE} />
             <Legend
               formatter={(v) => (
-                <span className="text-[11px] text-slate-400">{LINE_LABELS[v] ?? v}</span>
+                <span className="text-[11px] text-ink-muted">{LINE_LABELS[v] ?? v}</span>
               )}
             />
             {Object.entries(LINE_COLORS).map(([key, color]) => (
@@ -113,10 +113,10 @@ export function AnalyticsPage() {
         </div>
         <div className="grid grid-cols-3 gap-4">
           {Object.entries(BU_METRICS).map(([bu, metrics]) => (
-            <div key={bu} className="card-hover rounded-2xl p-5">
+            <div key={bu} className="card rounded-2xl p-5 hover:shadow-card-md transition-all">
               <div className="flex items-center justify-between mb-4">
-                <p className="text-[14px] font-bold text-white">{bu}</p>
-                <span className="text-[10px] font-semibold text-success bg-success/10 border border-success/20 px-2 py-0.5 rounded-full">
+                <p className="text-[14px] font-bold text-ink">{bu}</p>
+                <span className="text-[10px] font-semibold text-success bg-success-bg border border-success-border px-2 py-0.5 rounded-full">
                   Active
                 </span>
               </div>
@@ -129,16 +129,16 @@ export function AnalyticsPage() {
                   ] as { label: string; value: number; warn: number }[]
                 ).map(({ label, value, warn }) => {
                   const color =
-                    value >= warn ? '#6366F1' : value >= warn - 3 ? '#F59E0B' : '#EF4444'
+                    value >= warn ? '#059669' : value >= warn - 3 ? '#D97706' : '#DC2626'
                   return (
                     <div key={label}>
                       <div className="flex items-center justify-between text-[11px] mb-1.5">
-                        <span className="text-slate-500 font-medium">{label}</span>
+                        <span className="text-ink-muted font-medium">{label}</span>
                         <span className="font-mono font-bold tabular-nums" style={{ color }}>
                           {value}%
                         </span>
                       </div>
-                      <div className="h-1 bg-white/[0.06] rounded-full overflow-hidden">
+                      <div className="h-1 bg-border-light rounded-full overflow-hidden">
                         <div
                           className="h-full rounded-full transition-all"
                           style={{ width: `${value}%`, background: color }}

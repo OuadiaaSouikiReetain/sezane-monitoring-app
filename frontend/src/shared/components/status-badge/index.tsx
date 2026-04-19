@@ -10,44 +10,44 @@ interface StatusConfig {
 const CONFIG: Record<string, StatusConfig> = {
   healthy: {
     label: 'Healthy',
-    cls: 'bg-success/10 text-success border-success/20',
+    cls: 'bg-success-bg text-success border-success-border',
     dot: 'bg-success',
   },
   degraded: {
     label: 'Degraded',
-    cls: 'bg-warning/10 text-warning border-warning/20',
+    cls: 'bg-warning-bg text-warning border-warning-border',
     dot: 'bg-warning',
   },
   critical: {
     label: 'Critical',
-    cls: 'bg-danger/10 text-danger border-danger/25',
+    cls: 'bg-danger-bg text-danger border-danger-border',
     dot: 'bg-danger',
     pulse: true,
   },
   info: {
     label: 'Info',
-    cls: 'bg-info/10 text-info border-info/20',
+    cls: 'bg-info-bg text-info border-info-border',
     dot: 'bg-info',
   },
   unknown: {
     label: 'Unknown',
-    cls: 'bg-slate-500/10 text-slate-400 border-slate-500/20',
-    dot: 'bg-slate-500',
+    cls: 'bg-elevated text-ink-muted border-border',
+    dot: 'bg-ink-faint',
   },
   open: {
     label: 'Open',
-    cls: 'bg-danger/10 text-danger border-danger/25',
+    cls: 'bg-danger-bg text-danger border-danger-border',
     dot: 'bg-danger',
     pulse: true,
   },
   acknowledged: {
     label: 'Acknowledged',
-    cls: 'bg-warning/10 text-warning border-warning/20',
+    cls: 'bg-warning-bg text-warning border-warning-border',
     dot: 'bg-warning',
   },
   resolved: {
     label: 'Resolved',
-    cls: 'bg-success/10 text-success border-success/20',
+    cls: 'bg-success-bg text-success border-success-border',
     dot: 'bg-success',
   },
 }

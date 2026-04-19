@@ -31,19 +31,26 @@ export const SfmcJourneyStatsSchema = z.object({
   sent:                 z.number().optional(),
 })
 
+const SfmcActivitySchema = z.object({
+  id:   z.string().optional(),
+  name: z.string().optional(),
+  type: z.string().optional(),
+}).passthrough()
+
 export const SfmcJourneySchema = z.object({
-  id:               z.string(),
-  name:             z.string(),
-  key:              z.string().optional(),
-  status:           z.string(),
-  definitionType:   z.string().optional(),
-  version:          z.number().optional(),
-  description:      z.string().optional(),
-  lastPublishedDate: z.string().optional(),
-  createdDate:      z.string().optional(),
-  modifiedDate:     z.string().optional(),
-  stats:            SfmcJourneyStatsSchema.optional(),
-})
+  id:                z.string(),
+  name:              z.string(),
+  key:               z.string().nullable().optional(),
+  status:            z.string(),
+  definitionType:    z.string().nullable().optional(),
+  version:           z.number().nullable().optional(),
+  description:       z.string().nullable().optional(),
+  lastPublishedDate: z.string().nullable().optional(),
+  createdDate:       z.string().nullable().optional(),
+  modifiedDate:      z.string().nullable().optional(),
+  stats:             SfmcJourneyStatsSchema.nullable().optional(),
+  activities:        z.array(SfmcActivitySchema).optional().default([]),
+}).passthrough()
 
 // ─── TypeScript types ─────────────────────────────────────────────────────────
 
