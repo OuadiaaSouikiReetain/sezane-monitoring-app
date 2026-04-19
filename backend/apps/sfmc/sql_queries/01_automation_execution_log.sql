@@ -9,7 +9,10 @@
 -- ============================================================
 
 SELECT
-    NEWID()                                               AS id_log,
+    -- ⚠️  id_log = AutomationInstanceID (pas NEWID) pour éviter les doublons :
+    --    si la Query Activity est re-lancée dans la même fenêtre, la DE fait
+    --    un UPSERT sur la PK et écrase la ligne existante plutôt que d'insérer.
+    AutomationInstanceID                                  AS id_log,
     AutomationInstanceID                                  AS sfmc_instance_id,
     'automation'                                          AS component_type,
     AutomationCustomerKey                                 AS component_id,
@@ -18,7 +21,14 @@ SELECT
     NULL                                                  AS activity_name,
     NULL                                                  AS activity_type,
     NULL                                                  AS step_id,
-    LOWER(AutomationInstanceStatus)                       AS status,
+    CASE
+        WHEN AutomationInstanceStatus IN ('Complete', 'Completed') THEN 'success'
+        WHEN AutomationInstanceStatus = 'Error'                    THEN 'error'
+        WHEN AutomationInstanceStatus = 'Running'                  THEN 'running'
+        WHEN AutomationInstanceStatus = 'Skipped'                  THEN 'skipped'
+        WHEN AutomationInstanceStatus = 'Paused'                   THEN 'paused'
+        ELSE LOWER(AutomationInstanceStatus)
+    END                                                   AS status,
     CASE AutomationInstanceIsRunOnce
         WHEN 1 THEN 'manual'
         ELSE        'scheduled'
@@ -36,6 +46,7 @@ SELECT
 FROM _AutomationInstance
 
 WHERE
-    -- Fenêtre glissante : dernières 2 heures pour éviter les doublons
-    AutomationInstanceStartTime_UTC >= DATEADD(HOUR, -2, GETDATE())
+    -- Fenêtre glissante : dernières 48 heures (augmentée depuis 2h).
+    -- La clé PK = AutomationInstanceID assure l'idempotence (pas de doublons).
+    AutomationInstanceStartTime_UTC >= DATEADD(HOUR, -48, GETDATE())
     AND AutomationInstanceStartTime_UTC IS NOT NULL

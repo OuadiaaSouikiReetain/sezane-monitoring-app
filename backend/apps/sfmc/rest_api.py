@@ -58,6 +58,10 @@ def get_automations_with_kpis(search: str = None) -> list[dict]:
             'steps':         auto.get('steps', []),
             'schedule':      schedule,
             'kpis':          kpis,
+            # Metadata — may be null if SFMC API omits them on list endpoint
+            'createdDate':   auto.get('createdDate'),
+            'modifiedDate':  auto.get('modifiedDate'),
+            'lastRunTime':   auto.get('lastRunTime'),
         })
 
     return result

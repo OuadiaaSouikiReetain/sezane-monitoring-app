@@ -35,12 +35,19 @@ const STATUS_CONFIG: Record<string, {
   icon:  React.ElementType
   cls:   string
 }> = {
+  // ── Success variants ────────────────────────────────────────────────────────
+  success:   { label: 'Success',   icon: CheckCircle,  cls: 'text-emerald-700 bg-emerald-50 border-emerald-200' },
   complete:  { label: 'Complete',  icon: CheckCircle,  cls: 'text-emerald-700 bg-emerald-50 border-emerald-200' },
   completed: { label: 'Complete',  icon: CheckCircle,  cls: 'text-emerald-700 bg-emerald-50 border-emerald-200' },
+  // ── Error / issue variants ───────────────────────────────────────────────────
   error:     { label: 'Error',     icon: XCircle,      cls: 'text-red-700     bg-red-50     border-red-200'     },
+  failed:    { label: 'Failed',    icon: XCircle,      cls: 'text-red-700     bg-red-50     border-red-200'     },
+  // ── In-progress / neutral ────────────────────────────────────────────────────
   running:   { label: 'Running',   icon: Loader2,      cls: 'text-ink-sub    bg-elevated    border-border'      },
   paused:    { label: 'Paused',    icon: Minus,        cls: 'text-amber-700  bg-amber-50   border-amber-200'   },
+  skipped:   { label: 'Skipped',   icon: Minus,        cls: 'text-ink-muted  bg-elevated   border-border'      },
   cancelled: { label: 'Cancelled', icon: Minus,        cls: 'text-ink-muted  bg-elevated   border-border'      },
+  // ── Journey-specific ─────────────────────────────────────────────────────────
   entry:     { label: 'Entry',     icon: CheckCircle,  cls: 'text-emerald-700 bg-emerald-50 border-emerald-200' },
   exit:      { label: 'Exit',      icon: Minus,        cls: 'text-ink-muted  bg-elevated   border-border'      },
   goal_met:  { label: 'Goal Met',  icon: CheckCircle,  cls: 'text-emerald-700 bg-emerald-50 border-emerald-200'},
@@ -76,6 +83,13 @@ interface ExecutionHistorySectionProps {
 export function ExecutionHistorySection({
   items, isLoading, isError, refetch,
 }: ExecutionHistorySectionProps) {
+  // Sort by start_time DESC — the DE query has no ORDER BY guarantee
+  const sorted = [...items].sort((a, b) => {
+    const ta = a.start_time ? new Date(a.start_time).getTime() : 0
+    const tb = b.start_time ? new Date(b.start_time).getTime() : 0
+    return tb - ta
+  })
+
   return (
     <div className="px-6 py-5 border-b border-border">
 
@@ -86,9 +100,12 @@ export function ExecutionHistorySection({
           Recent Runs
         </p>
         {!isLoading && (
-          <span className="text-[10px] text-ink-faint bg-elevated border border-border px-2 py-0.5 rounded-full">
-            {items.length} enregistrés
-          </span>
+          <div className="flex items-center gap-1.5">
+            <span className="text-[9px] text-ink-faint bg-elevated border border-border px-1.5 py-0.5 rounded-full font-mono">UTC</span>
+            <span className="text-[10px] text-ink-faint bg-elevated border border-border px-2 py-0.5 rounded-full">
+              {items.length} enregistrés
+            </span>
+          </div>
         )}
       </div>
 
@@ -133,9 +150,9 @@ export function ExecutionHistorySection({
       )}
 
       {/* Rows */}
-      {!isLoading && !isError && items.length > 0 && (
+      {!isLoading && !isError && sorted.length > 0 && (
         <div className="space-y-1.5">
-          {items.map((row) => (
+          {sorted.map((row) => (
             <div
               key={row.id_log}
               className="flex items-center gap-2 p-2 rounded-lg bg-bg border border-border hover:border-border-strong transition-colors"

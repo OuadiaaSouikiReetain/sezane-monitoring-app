@@ -59,6 +59,23 @@ def time_since_last_success(executions: list[dict]) -> float | None:
         return None
 
 
+def time_since_last_run(executions: list[dict]) -> float | None:
+    """
+    Temps en heures depuis le dernier run (toute statut confondu).
+    Retourne None si aucun run trouvé.
+    """
+    with_time = [e for e in executions if e.get('end_time') or e.get('start_time')]
+    if not with_time:
+        return None
+    latest = max(with_time, key=lambda x: x.get('end_time') or x.get('start_time') or '')
+    t_str = latest.get('end_time') or latest.get('start_time')
+    try:
+        t = datetime.fromisoformat(str(t_str).replace('Z', '+00:00'))
+        return round((datetime.now(timezone.utc) - t).total_seconds() / 3600, 2)
+    except Exception:
+        return None
+
+
 def on_time_rate(executions: list[dict], tolerance_minutes: int = 15) -> float:
     """
     % de runs qui se sont lancés dans la fenêtre de tolérance autour

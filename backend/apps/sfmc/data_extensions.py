@@ -30,6 +30,7 @@ def read_de(de_name: str, filters: dict = None, max_rows: int = 2500) -> list[di
     de_name : clé dans DE_KEYS (ex: 'execution_log')
     filters : dict de filtres ex. {'component_id': 'abc-123', 'status': 'error'}
               La comparaison est insensible à la casse pour les valeurs string.
+              Un champ absent de la ligne est ignoré (pas de rejet).
     """
     de_key = DE_KEYS.get(de_name, de_name)
     path   = f'/data/v1/customobjectdata/key/{de_key}/rowset'
@@ -52,8 +53,9 @@ def read_de(de_name: str, filters: dict = None, max_rows: int = 2500) -> list[di
                 flat_lower = {k.lower(): v for k, v in flat.items()}
                 for f_key, f_val in filters.items():
                     row_val = flat_lower.get(f_key.lower())
+                    # Champ absent → on ignore ce filtre (pas de rejet)
                     if row_val is None:
-                        return False
+                        continue
                     if str(row_val).lower() != str(f_val).lower():
                         return False
                 return True

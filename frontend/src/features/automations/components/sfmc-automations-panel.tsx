@@ -1,8 +1,10 @@
 import { useState, useMemo, useCallback } from 'react'
 import {
   Activity, AlertCircle, Clock, Loader2, RefreshCw, Search, Zap,
-  CheckCircle2, XCircle, PauseCircle,
+  CheckCircle2, XCircle, PauseCircle, DatabaseZap,
 } from 'lucide-react'
+import { useMutation } from '@tanstack/react-query'
+import axios from 'axios'
 import { StatusBadge } from '@/shared/components/ui'
 import { useSfmcAutomations } from '../hooks/use-sfmc-automations'
 import { AutomationDrawer } from './automation-drawer'
@@ -126,9 +128,23 @@ export function SfmcAutomationsPanel() {
   const [search, setSearch]             = useState('')
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
   const [selected, setSelected]         = useState<SfmcAutomationEnriched | null>(null)
+  const [syncMsg, setSyncMsg]           = useState<string | null>(null)
 
   const { automations, isLoading, isError, error, refetch, isFetching } =
     useSfmcAutomations(search ? { search } : undefined)
+
+  const { mutate: syncKpis, isPending: isSyncing } = useMutation({
+    mutationFn: () => axios.post('/api/automations/sync-kpis/'),
+    onSuccess: (res) => {
+      const d = res.data
+      setSyncMsg(`✓ ${d.synced} automations — ${d.kpis_written} KPIs written`)
+      setTimeout(() => setSyncMsg(null), 6000)
+    },
+    onError: () => {
+      setSyncMsg('✗ Sync failed')
+      setTimeout(() => setSyncMsg(null), 4000)
+    },
+  })
 
   const stats = useMemo(() => ({
     total:    automations.length,
@@ -247,6 +263,25 @@ export function SfmcAutomationsPanel() {
                 onChange={(e) => setSearch(e.target.value)}
                 className="w-full pl-8 pr-3 py-1.5 text-[12px] bg-bg border border-border rounded-lg text-ink placeholder:text-ink-faint focus:outline-none focus:border-border-strong focus:ring-1 focus:ring-ink/10"
               />
+            </div>
+
+            {/* Sync KPIs button */}
+            <div className="flex items-center gap-2 shrink-0">
+              {syncMsg && (
+                <span className="text-[11px] text-ink-muted font-mono">{syncMsg}</span>
+              )}
+              <button
+                onClick={() => syncKpis()}
+                disabled={isSyncing}
+                title="Compute KPIs from ExecutionLog and save to KPI_Value DE"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold border border-border bg-bg text-ink-muted hover:text-ink hover:border-border-strong transition-all disabled:opacity-50"
+              >
+                {isSyncing
+                  ? <Loader2 size={12} className="animate-spin" />
+                  : <DatabaseZap size={12} />
+                }
+                {isSyncing ? 'Syncing…' : 'Sync KPIs'}
+              </button>
             </div>
 
             {/* Count + spinner */}

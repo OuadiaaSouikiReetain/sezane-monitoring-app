@@ -1,15 +1,21 @@
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import {
   X, Cog, Calendar, Clock, Layers, Activity,
-  AlertCircle, ChevronRight, Zap, RefreshCw, CheckCircle,
-  XCircle, Minus, Loader2, AlertTriangle,
+  AlertCircle, ChevronRight, RefreshCw,
+  XCircle, TrendingUp, CheckCircle2,
+  BarChart2, Timer, AlertTriangle, Hash,
+  Zap, Heart, Gauge, ArrowUpRight, User, Pause,
+  CheckCircle, Minus, Loader2, Database,
 } from 'lucide-react'
 import { StatusBadge } from '@/shared/components/ui'
 import { useSfmcAutomationDetails } from '../hooks/use-sfmc-automations'
-import { useAutomationKpis } from '../hooks/use-automation-kpis'
-import { useAutomationExecutions } from '../hooks/use-automation-executions'
-import { EmailKpiSection } from '@/shared/components/email-kpi-section'
-import { ExecutionHistorySection } from '@/shared/components/execution-history-section'
+import { useAutomationKpis }        from '../hooks/use-automation-kpis'
+import { useAutomationExecutions }  from '../hooks/use-automation-executions'
+import { EmailKpiSection }          from '@/shared/components/email-kpi-section'
+import type { ExecutionLogRow }      from '../hooks/use-automation-executions'
+import type {
+  ReliabilityKpis, PerformanceKpis, ActivityKpis, CompositeKpis,
+} from '../hooks/use-automation-kpis'
 import {
   resolveActivityLabel,
   SFMC_STATUS_LABEL,
@@ -42,7 +48,432 @@ function fmtDate(iso?: string | null): string {
   })
 }
 
-// ─── KPI Pill ─────────────────────────────────────────────────────────────────
+function fmtDur(sec: number | null | undefined): string {
+  if (sec == null) return '—'
+  if (sec < 60)    return `${Math.round(sec)}s`
+  const m = Math.floor(sec / 60)
+  const s = Math.round(sec % 60)
+  return s > 0 ? `${m}m ${s}s` : `${m}m`
+}
+
+function fmtHours(h: number | null | undefined): string {
+  if (h == null) return '—'
+  if (h < 1)     return `${Math.round(h * 60)}m`
+  if (h < 24)    return `${h.toFixed(1)}h`
+  return `${(h / 24).toFixed(1)}d`
+}
+
+function fmtPct(v: number | null | undefined): string {
+  if (v == null) return '—'
+  return `${(v * 100).toFixed(1)}%`
+}
+
+// ─── Section header ───────────────────────────────────────────────────────────
+
+function SectionHeader({ icon: Icon, title, badge }: {
+  icon: React.ElementType; title: string; badge?: string
+}) {
+  return (
+    <div className="flex items-center justify-between mb-3">
+      <p className="text-[11px] uppercase tracking-widest font-semibold text-ink-muted flex items-center gap-1.5">
+        <Icon size={11} />
+        {title}
+      </p>
+      {badge && (
+        <span className="text-[10px] text-ink-faint bg-elevated border border-border px-2 py-0.5 rounded-full">
+          {badge}
+        </span>
+      )}
+    </div>
+  )
+}
+
+// ─── Stat tile ────────────────────────────────────────────────────────────────
+
+function StatTile({ icon: Icon, label, value, sub, cls = '' }: {
+  icon: React.ElementType; label: string; value: string; sub?: string; cls?: string
+}) {
+  return (
+    <div className="bg-bg border border-border rounded-xl p-3">
+      <div className="flex items-center gap-1.5 text-ink-faint mb-1.5">
+        <Icon size={10} />
+        <span className="text-[10px] uppercase tracking-wide font-semibold">{label}</span>
+      </div>
+      <div className="flex items-end gap-2">
+        <span className={`text-[20px] font-bold leading-none ${cls || 'text-ink'}`}>{value}</span>
+        {sub && <span className="text-[10px] text-ink-faint mb-0.5">{sub}</span>}
+      </div>
+    </div>
+  )
+}
+
+// ─── Skeleton loader ──────────────────────────────────────────────────────────
+
+function KpiSkeleton({ cols = 2, rows = 1 }: { cols?: number; rows?: number }) {
+  return (
+    <div className={`grid grid-cols-${cols} gap-2 animate-pulse`}>
+      {Array.from({ length: cols * rows }).map((_, i) => (
+        <div key={i} className="h-16 bg-elevated rounded-xl border border-border" />
+      ))}
+    </div>
+  )
+}
+
+// ─── Groupe 1 : Reliability ───────────────────────────────────────────────────
+
+function ReliabilitySection({ data, isLoading }: {
+  data?: ReliabilityKpis; isLoading: boolean
+}) {
+  const sr  = data ? data.success_rate * 100 : null
+  const er  = data ? data.error_rate  * 100 : null
+
+  const srCls =
+    sr === null ? 'text-ink-muted' :
+    sr >= 95    ? 'text-success'   :
+    sr >= 80    ? 'text-warning'   : 'text-danger'
+
+  const erCls =
+    er === null ? 'text-ink-muted' :
+    er === 0    ? 'text-success'   :
+    er < 10     ? 'text-warning'   : 'text-danger'
+
+  const ccCls =
+    !data                         ? 'text-ink-muted' :
+    data.consecutive_failures === 0 ? 'text-success'  :
+    data.consecutive_failures < 3   ? 'text-warning'  : 'text-danger'
+
+  return (
+    <div className="px-6 py-5 border-b border-border">
+      <SectionHeader icon={BarChart2} title="Reliability" badge={data ? `${data.total_runs} runs` : undefined} />
+
+      {isLoading && <KpiSkeleton cols={2} rows={2} />}
+
+      {!isLoading && !data && (
+        <p className="text-[11px] text-ink-faint italic text-center py-3">
+          No run data available yet
+        </p>
+      )}
+
+      {!isLoading && data && (
+        <>
+          <div className="grid grid-cols-2 gap-2 mb-3">
+            <StatTile icon={CheckCircle2} label="Success Rate"
+              value={sr != null ? `${sr.toFixed(1)}%` : '—'}
+              sub={`${data.success_count}/${data.total_runs} runs`}
+              cls={srCls} />
+
+            <StatTile icon={XCircle} label="Error Rate"
+              value={er != null ? `${er.toFixed(1)}%` : '—'}
+              sub={`${data.error_count} error${data.error_count !== 1 ? 's' : ''}`}
+              cls={erCls} />
+
+            <StatTile icon={AlertTriangle} label="Consec. Errors"
+              value={String(data.consecutive_failures)}
+              sub={data.consecutive_failures === 0 ? 'all good' : data.consecutive_failures < 3 ? 'watch' : 'critical'}
+              cls={ccCls} />
+
+            <StatTile icon={Clock} label="Since Last OK"
+              value={fmtHours(data.time_since_last_success_hours)}
+              sub={data.time_since_last_run_hours != null ? `last run ${fmtHours(data.time_since_last_run_hours)} ago` : undefined} />
+          </div>
+
+          {sr !== null && (
+            <div className="space-y-1">
+              <div className="flex justify-between text-[10px] text-ink-faint">
+                <span>Success rate over {data.total_runs} runs</span>
+                <span className={srCls}>{sr.toFixed(1)}%</span>
+              </div>
+              <div className="h-1.5 bg-border rounded-full overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all duration-500 ${
+                    sr >= 95 ? 'bg-success' : sr >= 80 ? 'bg-warning' : 'bg-danger'
+                  }`}
+                  style={{ width: `${sr}%` }}
+                />
+              </div>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  )
+}
+
+// ─── Groupe 2 : Performance ───────────────────────────────────────────────────
+
+function PerformanceSection({ data, isLoading }: {
+  data?: PerformanceKpis; isLoading: boolean
+}) {
+  if (!isLoading && !data) return null
+
+  return (
+    <div className="px-6 py-5 border-b border-border">
+      <SectionHeader icon={Timer} title="Performance" />
+
+      {isLoading && <KpiSkeleton cols={4} rows={1} />}
+
+      {!isLoading && data && (
+        <div className="grid grid-cols-4 gap-2">
+          <StatTile icon={Gauge}       label="Avg"  value={fmtDur(data.avg_duration_seconds)} />
+          <StatTile icon={ArrowUpRight} label="Max" value={fmtDur(data.max_duration_seconds)} />
+          <StatTile icon={Timer}       label="P95"  value={fmtDur(data.p95_duration_seconds)} />
+          <StatTile icon={Zap}         label="Min"  value={fmtDur(data.min_duration_seconds)} />
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── Groupe 3 : Activity Health ───────────────────────────────────────────────
+
+function ActivityHealthSection({ data, isLoading }: {
+  data?: ActivityKpis; isLoading: boolean
+}) {
+  if (!isLoading && (!data || data.breakdown.length === 0)) return null
+
+  return (
+    <div className="px-6 py-5 border-b border-border">
+      <SectionHeader icon={Activity} title="Activity Health" />
+
+      {isLoading && (
+        <div className="space-y-2 animate-pulse">
+          {[1, 2].map(i => <div key={i} className="h-16 bg-elevated rounded-xl border border-border" />)}
+        </div>
+      )}
+
+      {!isLoading && data && (
+        <div className="space-y-2">
+          {data.breakdown.map((act) => {
+            const er     = act.error_rate * 100
+            const erCls  = er === 0 ? 'text-success' : er < 20 ? 'text-warning' : 'text-danger'
+            const barCls = er === 0 ? 'bg-success'   : er < 20 ? 'bg-warning'   : 'bg-danger'
+            return (
+              <div key={act.name} className="p-2.5 rounded-xl bg-bg border border-border">
+                <div className="flex items-center gap-2 mb-1.5">
+                  <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded border bg-elevated text-ink-muted border-border flex-shrink-0">
+                    {act.type || '—'}
+                  </span>
+                  <span className="text-[12px] font-medium text-ink truncate flex-1">{act.name}</span>
+                  <span className={`text-[11px] font-mono font-bold flex-shrink-0 ${erCls}`}>
+                    {er.toFixed(0)}% err
+                  </span>
+                </div>
+                <div className="h-1 bg-border rounded-full overflow-hidden mb-1.5">
+                  <div className={`h-full rounded-full ${barCls}`} style={{ width: `${Math.min(er, 100)}%` }} />
+                </div>
+                <div className="flex items-center gap-3 text-[10px] text-ink-faint">
+                  <span>{act.total_runs} run{act.total_runs !== 1 ? 's' : ''}</span>
+                  {act.error_count > 0 && (
+                    <span className="text-danger">{act.error_count} error{act.error_count !== 1 ? 's' : ''}</span>
+                  )}
+                  <span className="ml-auto">avg {fmtDur(act.avg_duration_seconds)}</span>
+                </div>
+                {act.last_error && (
+                  <p className="mt-1.5 text-[10px] font-mono text-danger bg-danger-bg border border-danger-border px-2 py-1 rounded-lg truncate">
+                    {act.last_error}
+                  </p>
+                )}
+              </div>
+            )
+          })}
+
+          {data.top_errors.length > 0 && (
+            <div className="mt-2">
+              <p className="text-[10px] uppercase tracking-wider text-ink-faint mb-1.5">Recurring errors</p>
+              <div className="space-y-1">
+                {data.top_errors.map((e, i) => (
+                  <div key={i} className="flex items-center gap-2 text-[10px]">
+                    <span className="text-danger font-mono font-bold shrink-0">×{e.count}</span>
+                    <span className="text-ink-muted font-mono truncate">{e.message}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── Groupe 4 : Composite ─────────────────────────────────────────────────────
+
+function CompositeSection({ data, isLoading }: {
+  data?: CompositeKpis; isLoading: boolean
+}) {
+  if (!isLoading && !data) return null
+
+  const score    = data ? Math.round(data.health_score * 100) : null
+  const scoreCls =
+    score === null ? 'text-ink' :
+    score >= 85    ? 'text-success' :
+    score >= 60    ? 'text-warning' : 'text-danger'
+
+  return (
+    <div className="px-6 py-5 border-b border-border">
+      <SectionHeader icon={Heart} title="Health Score" />
+
+      {isLoading && <KpiSkeleton cols={3} rows={1} />}
+
+      {!isLoading && data && (
+        <div className="grid grid-cols-3 gap-2">
+          <StatTile icon={Heart}  label="Health Score"
+            value={score != null ? `${score}` : '—'}
+            sub="/ 100" cls={scoreCls} />
+          <StatTile icon={BarChart2} label="MTBF"
+            value={fmtHours(data.mtbf_hours)}
+            sub="between failures" />
+          <StatTile icon={RefreshCw} label="MTTR"
+            value={fmtHours(data.mttr_hours)}
+            sub="to recover" />
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── Run status badge (inline, no shared dep) ─────────────────────────────────
+
+const RUN_STATUS: Record<string, { icon: React.ElementType; cls: string; label: string }> = {
+  success:  { icon: CheckCircle, cls: 'text-emerald-700 bg-emerald-50 border-emerald-200', label: 'Success'  },
+  complete: { icon: CheckCircle, cls: 'text-emerald-700 bg-emerald-50 border-emerald-200', label: 'Success'  },
+  error:    { icon: XCircle,     cls: 'text-red-700 bg-red-50 border-red-200',             label: 'Error'    },
+  running:  { icon: Loader2,     cls: 'text-ink-sub bg-elevated border-border',            label: 'Running'  },
+  paused:   { icon: Pause,       cls: 'text-amber-700 bg-amber-50 border-amber-200',       label: 'Paused'   },
+  skipped:  { icon: Minus,       cls: 'text-ink-muted bg-elevated border-border',          label: 'Skipped'  },
+}
+
+function RunStatusBadge({ status }: { status: string }) {
+  const cfg = RUN_STATUS[status?.toLowerCase()] ?? { icon: Minus, cls: 'text-ink-muted bg-elevated border-border', label: status }
+  const Icon = cfg.icon
+  return (
+    <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded border flex-shrink-0 ${cfg.cls}`}>
+      <Icon size={9} className={status === 'running' ? 'animate-spin' : ''} />
+      {cfg.label}
+    </span>
+  )
+}
+
+// ─── Grouped runs section (automation run + its activities) ───────────────────
+
+function RunsSection({ items, isLoading, isError, refetch }: {
+  items: ExecutionLogRow[]; isLoading: boolean; isError: boolean; refetch: () => void
+}) {
+  // Group by sfmc_instance_id: one parent row (activity_id=null) + child activity rows
+  const groups = useMemo(() => {
+    const map = new Map<string, { auto: ExecutionLogRow | null; activities: ExecutionLogRow[] }>()
+    for (const row of items) {
+      const key = row.sfmc_instance_id || row.id_log
+      if (!map.has(key)) map.set(key, { auto: null, activities: [] })
+      const g = map.get(key)!
+      if (!row.activity_id) g.auto = row
+      else                  g.activities.push(row)
+    }
+    return [...map.values()]
+      .filter(g => g.auto !== null)
+      .sort((a, b) => {
+        const ta = a.auto?.start_time ? +new Date(a.auto.start_time) : 0
+        const tb = b.auto?.start_time ? +new Date(b.auto.start_time) : 0
+        return tb - ta
+      })
+      .slice(0, 10)
+  }, [items])
+
+  return (
+    <div className="px-6 py-5 border-b border-border">
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-[11px] uppercase tracking-widest font-semibold text-ink-muted flex items-center gap-1.5">
+          <Clock size={11} />
+          Recent Runs
+        </p>
+        {!isLoading && (
+          <div className="flex items-center gap-1.5">
+            <span className="text-[9px] text-ink-faint bg-elevated border border-border px-1.5 py-0.5 rounded-full font-mono">UTC</span>
+            <span className="text-[10px] text-ink-faint bg-elevated border border-border px-2 py-0.5 rounded-full">
+              {groups.length} run{groups.length !== 1 ? 's' : ''}
+            </span>
+          </div>
+        )}
+      </div>
+
+      {isLoading && (
+        <div className="space-y-2 animate-pulse">
+          {[1, 2, 3].map(i => <div key={i} className="h-12 bg-elevated rounded-xl border border-border" />)}
+        </div>
+      )}
+
+      {!isLoading && isError && (
+        <div className="flex items-center gap-2 py-3">
+          <AlertCircle size={13} className="text-ink-faint shrink-0" />
+          <p className="text-[11px] text-ink-muted italic">Données indisponibles</p>
+          <button onClick={refetch} className="ml-auto text-[10px] text-ink hover:text-ink-sub transition-colors">Réessayer</button>
+        </div>
+      )}
+
+      {!isLoading && !isError && groups.length === 0 && (
+        <div className="flex flex-col items-center gap-1.5 py-6">
+          <Database size={20} className="text-ink-faint" />
+          <p className="text-[11px] text-ink-muted text-center">Aucun run dans ExecutionLog</p>
+          <p className="text-[10px] text-ink-faint text-center">Données disponibles après la prochaine Query Activity SFMC</p>
+        </div>
+      )}
+
+      {!isLoading && !isError && groups.length > 0 && (
+        <div className="space-y-2">
+          {groups.map(({ auto, activities }) => {
+            if (!auto) return null
+            const sorted = [...activities].sort((a, b) =>
+              (a.start_time ? +new Date(a.start_time) : 0) -
+              (b.start_time ? +new Date(b.start_time) : 0)
+            )
+            return (
+              <div key={auto.id_log} className="rounded-xl border border-border bg-bg overflow-hidden">
+                {/* Automation run row */}
+                <div className="flex items-center gap-2 px-3 py-2">
+                  <RunStatusBadge status={auto.status} />
+                  <span className="text-[11px] text-ink-sub font-mono shrink-0">{fmtDate(auto.start_time)}</span>
+                  {auto.triggered_by && (
+                    <span className="text-[10px] text-ink-faint bg-elevated border border-border px-1.5 py-0.5 rounded-full shrink-0">
+                      {auto.triggered_by}
+                    </span>
+                  )}
+                  <span className="flex-1" />
+                  <span className="text-[11px] font-mono text-ink-muted shrink-0">{fmtDur(auto.duration_seconds)}</span>
+                </div>
+                {/* Error message */}
+                {auto.error_message && (
+                  <div className="mx-3 mb-2 text-[10px] font-mono text-danger bg-danger-bg border border-danger-border px-2 py-1 rounded-lg truncate">
+                    {auto.error_message}
+                  </div>
+                )}
+                {/* Activity rows */}
+                {sorted.length > 0 && (
+                  <div className="border-t border-border divide-y divide-border">
+                    {sorted.map(act => (
+                      <div key={act.id_log} className="flex items-center gap-2 px-4 py-1.5 bg-elevated">
+                        <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
+                          act.status === 'success' || act.status === 'complete' ? 'bg-success' :
+                          act.status === 'error'   ? 'bg-danger' : 'bg-ink-faint'
+                        }`} />
+                        <span className="text-[11px] text-ink-sub truncate flex-1">{act.activity_name ?? '—'}</span>
+                        {act.activity_type && (
+                          <span className="text-[10px] text-ink-faint font-mono shrink-0">{act.activity_type}</span>
+                        )}
+                        <span className="text-[10px] font-mono text-ink-faint shrink-0">{fmtDur(act.duration_seconds)}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── KPI Pill (live SFMC data) ────────────────────────────────────────────────
 
 function KpiPill({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: string | number }) {
   return (
@@ -73,12 +504,11 @@ function StepsTimeline({ steps }: { steps: SfmcStep[] }) {
       <div className="space-y-3">
         {steps.map((step, idx) => {
           const isLast  = idx === steps.length - 1
-          const stepNum = idx + 1
           return (
             <div key={step.id} className="relative flex gap-4">
               <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 z-10 text-[12px] font-bold border
                 ${isLast ? 'bg-ink text-white border-ink' : 'bg-elevated border-border text-ink-muted'}`}>
-                {stepNum}
+                {idx + 1}
               </div>
               <div className="flex-1 pb-2 min-w-0">
                 <div className="flex items-center gap-2 mb-2">
@@ -122,7 +552,7 @@ function StepsTimeline({ steps }: { steps: SfmcStep[] }) {
   )
 }
 
-// ─── Modal ────────────────────────────────────────────────────────────────────
+// ─── Main Drawer ──────────────────────────────────────────────────────────────
 
 interface AutomationDrawerProps {
   automation: SfmcAutomationEnriched | null
@@ -130,9 +560,15 @@ interface AutomationDrawerProps {
 }
 
 export function AutomationDrawer({ automation, onClose }: AutomationDrawerProps) {
-  const { automation: detail, isLoading, isError, error, refetch } = useSfmcAutomationDetails(automation?.id ?? '')
-  const { data: kpisResponse, isLoading: kpisLoading, isError: kpisError } = useAutomationKpis(automation?.id)
-  const { data: execData, isLoading: execLoading, isError: execError, refetch: execRefetch } = useAutomationExecutions(automation?.id)
+  const { automation: detail, isLoading, isError, error, refetch } =
+    useSfmcAutomationDetails(automation?.id ?? '')
+
+  const { data: kpisResponse, isLoading: kpisLoading } =
+    useAutomationKpis(automation?.id)
+
+  // Fetch enough rows to include both automation-level and activity-level rows
+  const { data: execData, isLoading: execLoading, isError: execError, refetch: execRefetch } =
+    useAutomationExecutions(automation?.id, 100)
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
@@ -142,16 +578,39 @@ export function AutomationDrawer({ automation, onClose }: AutomationDrawerProps)
 
   const isOpen = !!automation
   const data   = detail ? { ...automation, ...detail } : automation
+
   const schedule      = data?.startSource?.schedule
   const scheduleLabel = parseIcal(schedule?.icalRecur) !== '—'
     ? parseIcal(schedule?.icalRecur)
     : schedule?.scheduledTime ? fmtDate(schedule.scheduledTime) : '—'
+
   const steps           = detail?.steps ?? []
   const totalActivities = steps.reduce((s, st) => s + st.activities.length, 0)
 
-  // Last run error banner
-  const lastRun    = execData?.items?.[0]
-  const hasError   = lastRun?.status === 'error'
+  const allExecItems = execData?.items ?? []
+
+  // Last automation-level run (for the error banner)
+  const lastRun = [...allExecItems]
+    .filter(r => !r.activity_id)
+    .sort((a, b) =>
+      (b.start_time ? new Date(b.start_time).getTime() : 0) -
+      (a.start_time ? new Date(a.start_time).getTime() : 0)
+    )[0]
+  const hasError = lastRun?.status === 'error' || lastRun?.status === 'failed'
+
+  // Resolve audit fields — SFMC API may return them as string or nested object
+  const d = data as any
+  const createdBy    = d?.createdBy?.name    ?? d?.createdBy    ?? null
+  const modifiedBy   = d?.modifiedBy?.name   ?? d?.modifiedBy   ?? d?.lastSavedBy?.name ?? d?.lastSavedBy ?? null
+  const lastPausedBy = d?.lastPausedBy?.name ?? d?.lastPausedBy ?? null
+  const lastPausedDate = d?.lastPausedDate   ?? d?.pausedDate   ?? null
+
+  const hkpis      = kpisResponse?.historical_kpis
+  const computedAt = kpisResponse?.computed_at
+    ? new Date(kpisResponse.computed_at as string).toLocaleString('en-GB', {
+        day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit',
+      })
+    : null
 
   if (!isOpen) return null
 
@@ -207,54 +666,89 @@ export function AutomationDrawer({ automation, onClose }: AutomationDrawerProps)
               </div>
             )}
 
-            {/* KPI Pills */}
+            {/* ── Meta ──────────────────────────────────────────────────── */}
             <div className="px-6 pt-4 pb-4 border-b border-border">
               <div className="flex gap-2 mb-4">
                 <KpiPill icon={Layers}   label="Steps"      value={isLoading ? '…' : steps.length} />
                 <KpiPill icon={Activity} label="Activities" value={isLoading ? '…' : totalActivities} />
                 <KpiPill icon={Zap}      label="Status ID"  value={data?.statusId ?? '—'} />
               </div>
-              {/* Meta */}
+
               <div className="space-y-2">
-                {[
-                  { icon: Calendar, label: 'Schedule', value: scheduleLabel },
-                  { icon: Clock,    label: 'Last run',  value: fmtDate(data?.lastRunTime) },
-                  { icon: Clock,    label: 'Modified',  value: fmtDate(data?.modifiedDate) },
-                  { icon: Clock,    label: 'Created',   value: fmtDate(data?.createdDate) },
-                ].map(({ icon: Icon, label, value }) => (
-                  <div key={label} className="flex items-center gap-2 text-[12px]">
-                    <Icon size={13} className="text-ink-faint flex-shrink-0" />
-                    <span className="text-ink-muted w-24 shrink-0">{label}</span>
-                    <span className="text-ink-sub font-mono text-[11px] truncate">{value}</span>
-                  </div>
-                ))}
+                {([
+                  { icon: Calendar,   label: 'Schedule',      value: scheduleLabel                  },
+                  { icon: Clock,      label: 'Last run',       value: fmtDate(data?.lastRunTime)     },
+                  { icon: User,       label: 'Created by',     value: createdBy                      },
+                  { icon: Hash,       label: 'Created',        value: fmtDate(data?.createdDate)     },
+                  { icon: User,       label: 'Last saved by',  value: modifiedBy                     },
+                  { icon: TrendingUp, label: 'Last saved',     value: fmtDate(data?.modifiedDate)    },
+                  { icon: Pause,      label: 'Last paused by', value: lastPausedBy                   },
+                  { icon: Pause,      label: 'Last paused',    value: fmtDate(lastPausedDate)        },
+                ] as { icon: React.ElementType; label: string; value: string | null | undefined }[])
+                  .filter(row => row.value && row.value !== '—')
+                  .map(({ icon: Icon, label, value: v }) => (
+                    <div key={label} className="flex items-center gap-2 text-[12px]">
+                      <Icon size={13} className="text-ink-faint flex-shrink-0" />
+                      <span className="text-ink-muted w-28 shrink-0">{label}</span>
+                      <span className="text-ink-sub font-mono text-[11px] truncate">{v}</span>
+                    </div>
+                  ))
+                }
                 {data?.key && (
                   <div className="flex items-center gap-2 text-[12px]">
                     <Cog size={13} className="text-ink-faint flex-shrink-0" />
-                    <span className="text-ink-muted w-24 shrink-0">Key</span>
+                    <span className="text-ink-muted w-28 shrink-0">Key</span>
                     <span className="text-ink-sub font-mono text-[11px] truncate">{data.key}</span>
                   </div>
                 )}
               </div>
             </div>
 
-            {/* Email KPIs */}
-            <EmailKpiSection data={kpisResponse?.email_kpis} isLoading={kpisLoading} isError={kpisError} />
+            {/* ── KPIs computed_at banner ───────────────────────────────── */}
+            {computedAt && (
+              <div className="mx-6 mt-4 flex items-center gap-1.5 text-[10px] text-ink-faint">
+                <RefreshCw size={9} />
+                <span>KPIs computed {computedAt}</span>
+              </div>
+            )}
 
-            {/* Recent Runs */}
-            <ExecutionHistorySection
-              items={execData?.items ?? []}
+            {/* ── Groupe 1 : Reliability ────────────────────────────────── */}
+            <ReliabilitySection data={hkpis?.reliability} isLoading={kpisLoading} />
+
+            {/* ── Groupe 2 : Performance ────────────────────────────────── */}
+            <PerformanceSection data={hkpis?.performance} isLoading={kpisLoading} />
+
+            {/* ── Groupe 4 : Health Score / MTBF / MTTR ─────────────────── */}
+            <CompositeSection data={hkpis?.composite} isLoading={kpisLoading} />
+
+            {/* ── Email KPIs ────────────────────────────────────────────── */}
+            {(kpisLoading || kpisResponse?.email_kpis?.data_available) && (
+              <EmailKpiSection
+                data={kpisResponse?.email_kpis}
+                isLoading={kpisLoading}
+                isError={false}
+              />
+            )}
+
+            {/* ── Groupe 3 : Activity Health ────────────────────────────── */}
+            <ActivityHealthSection data={hkpis?.activity} isLoading={kpisLoading} />
+
+            {/* ── Recent Runs (grouped by instance, with activity detail) ── */}
+            <RunsSection
+              items={allExecItems}
               isLoading={execLoading}
               isError={execError}
               refetch={execRefetch}
             />
 
-            {/* Steps & Activities */}
+            {/* ── Steps & Activities ────────────────────────────────────── */}
             <div className="px-6 py-5">
-              <p className="text-[11px] uppercase tracking-widest font-semibold text-ink-muted mb-4">Steps & Activities</p>
+              <p className="text-[11px] uppercase tracking-widest font-semibold text-ink-muted mb-4">
+                Steps & Activities
+              </p>
               {isLoading ? (
                 <div className="flex flex-col gap-4">
-                  {[1,2,3].map((i) => (
+                  {[1, 2, 3].map((i) => (
                     <div key={i} className="flex gap-4 animate-pulse">
                       <div className="w-8 h-8 rounded-full bg-elevated flex-shrink-0" />
                       <div className="flex-1 space-y-2 pt-1">
@@ -267,8 +761,8 @@ export function AutomationDrawer({ automation, onClose }: AutomationDrawerProps)
               ) : isError ? (
                 <div className="space-y-3">
                   <div className="flex items-center gap-2 text-danger">
-                    <AlertCircle size={14} className="text-danger flex-shrink-0" />
-                    <p className="text-[12px] font-semibold text-danger">Failed to load steps</p>
+                    <AlertCircle size={14} className="flex-shrink-0" />
+                    <p className="text-[12px] font-semibold">Failed to load steps</p>
                   </div>
                   <p className="text-[11px] text-ink-muted font-mono">{(error as Error)?.message ?? 'Unknown error'}</p>
                   <button onClick={() => refetch()}
