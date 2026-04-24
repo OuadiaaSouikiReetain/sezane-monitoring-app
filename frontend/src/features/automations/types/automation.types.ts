@@ -130,20 +130,57 @@ export const SfmcStartSourceSchema = z.object({
   typeId:   z.coerce.number().optional(),
 }).passthrough()
 
+// Référence utilisateur SFMC { id, name } ou simple string
+const SfmcUserRefSchema = z.union([
+  z.object({ id: z.coerce.string().optional(), name: z.string().optional() }).passthrough(),
+  z.string(),
+]).nullable().optional()
+
+// Extrait le nom d'un champ user ref (object ou string)
+export function extractUserName(ref: unknown): string | null {
+  if (!ref) return null
+  if (typeof ref === 'string') return ref || null
+  if (typeof ref === 'object' && ref !== null && 'name' in ref) {
+    const n = (ref as { name?: string }).name
+    return n || null
+  }
+  return null
+}
+
+const SfmcNotificationsSchema = z.object({
+  email: z.object({
+    enabled:   z.boolean().optional(),
+    addresses: z.array(z.string()).optional(),
+  }).passthrough().optional(),
+}).passthrough().nullable().optional()
+
 export const SfmcAutomationSchema = z.object({
-  id:           z.coerce.string(),
-  name:         z.string().catch('—'),
-  description:  z.string().nullable().optional(),
-  key:          z.string().nullable().optional(),
-  typeId:       z.coerce.number().optional(),
-  type:         z.string().nullable().optional(),
-  statusId:     z.coerce.number().catch(0),
-  status:       z.string().nullable().optional(),
-  startSource:  SfmcStartSourceSchema.nullable().optional(),
-  steps:        z.array(SfmcStepSchema).default([]),
-  createdDate:  z.string().nullable().optional(),
-  modifiedDate: z.string().nullable().optional(),
-  lastRunTime:  z.string().nullable().optional(),
+  id:            z.coerce.string(),
+  name:          z.string().catch('—'),
+  description:   z.string().nullable().optional(),
+  key:           z.string().nullable().optional(),
+  typeId:        z.coerce.number().optional(),
+  type:          z.string().nullable().optional(),
+  statusId:      z.coerce.number().catch(0),
+  status:        z.string().nullable().optional(),
+  isActive:      z.boolean().nullable().optional(),
+  startSource:   SfmcStartSourceSchema.nullable().optional(),
+  schedule:      SfmcScheduleSchema.nullable().optional(),
+  steps:         z.array(SfmcStepSchema).default([]),
+  categoryId:    z.coerce.number().nullable().optional(),
+  categoryName:  z.string().nullable().optional(),
+  folderId:      z.coerce.number().nullable().optional(),
+  createdDate:   z.string().nullable().optional(),
+  modifiedDate:  z.string().nullable().optional(),
+  lastRunTime:   z.string().nullable().optional(),
+  lastSavedDate: z.string().nullable().optional(),
+  lastPausedDate:z.string().nullable().optional(),
+  pausedDate:    z.string().nullable().optional(),
+  createdBy:     SfmcUserRefSchema,
+  modifiedBy:    SfmcUserRefSchema,
+  lastSavedBy:   SfmcUserRefSchema,
+  lastPausedBy:  SfmcUserRefSchema,
+  notifications: SfmcNotificationsSchema,
 }).passthrough()
 
 // ─── Inferred TypeScript types ────────────────────────────────────────────────

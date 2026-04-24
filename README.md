@@ -1,164 +1,185 @@
-# SFMC Monitoring — Control Center
+# SFMC Monitor — Control Center
 
-A modern enterprise monitoring dashboard for **Salesforce Marketing Cloud (SFMC)**.
-Built with React 18, Vite, Tailwind CSS, and Recharts.
-
----
-
-## Preview
-
-> Dark mode · Real-time clock · 8 monitoring modules · Interactive charts · Color-coded alerts
+Dashboard de monitoring enterprise pour **Salesforce Marketing Cloud (SFMC)**.  
+Affiche en temps réel les automations, journeys, KPIs de fiabilité, historique d'exécution et contenu des activités SQL/Script.
 
 ---
 
-## Tech Stack
+## Architecture
 
-| Tool | Version | Purpose |
-|---|---|---|
-| React | 18 | UI framework |
-| Vite | 5 | Build tool & dev server |
-| Tailwind CSS | 3 | Utility-first styling |
-| Recharts | 2 | Charts & visualizations |
-| Lucide React | latest | Icons |
+```
+sezane-monitoring-app/
+├── backend/     Django REST API — proxy sécurisé vers SFMC (REST + SOAP)
+└── frontend/    React 18 + Vite + Tailwind CSS
+```
+
+| Couche | Stack |
+|--------|-------|
+| Frontend | React 18, Vite, Tailwind CSS, TanStack Query, Recharts |
+| Backend | Django 4, Django REST Framework, Celery, Redis |
+| SFMC | REST API v1 + SOAP API (QueryDefinition, Script) + Data Views |
 
 ---
 
-## Prerequisites
+## Prérequis
 
-Make sure you have installed:
+- **Python** 3.11+
+- **Node.js** 18+ et npm 9+
+- **Redis** (pour Celery)
+- Un compte SFMC avec une **API Installed Package** (client_id + client_secret)
 
-- [Node.js](https://nodejs.org/) **v18 or higher**
-- npm **v9 or higher**
+---
 
-Verify your versions:
+## Configuration
+
+### 1. Variables d'environnement backend
+
+Créer `backend/.env` :
+
+```env
+SFMC_CLIENT_ID=your_client_id
+SFMC_CLIENT_SECRET=your_client_secret
+SFMC_AUTH_BASE_URI=https://xxxxxxxxxxxx.auth.marketingcloudapis.com
+SFMC_REST_BASE_URI=https://xxxxxxxxxxxx.rest.marketingcloudapis.com
+SFMC_ACCOUNT_ID=your_mid          # optionnel
+
+SECRET_KEY=django-secret-key
+DEBUG=True
+ALLOWED_HOSTS=localhost,127.0.0.1
+```
+
+> L'URL SOAP est dérivée automatiquement depuis `SFMC_REST_BASE_URI` (`.rest.` → `.soap.`).
+
+---
+
+## Lancer l'application
+
+### Backend (Django)
 
 ```bash
-node -v
-npm -v
+cd backend
+
+# 1. Créer et activer le virtualenv
+python -m venv venv
+venv\Scripts\activate        # Windows
+# source venv/bin/activate   # Mac/Linux
+
+# 2. Installer les dépendances
+pip install -r requirements.txt
+
+# 3. Appliquer les migrations
+python manage.py migrate
+
+# 4. Démarrer le serveur
+python manage.py runserver
+```
+
+API disponible sur **http://localhost:8000**
+
+#### (Optionnel) Celery — tâches de sync planifiées
+
+```bash
+# Dans un terminal séparé
+celery -A config worker -l info
+
+# Dans un autre terminal
+celery -A config beat -l info
 ```
 
 ---
 
-## Getting Started
-
-### 1. Clone the repository
+### Frontend (React)
 
 ```bash
-git clone https://github.com/your-username/your-repo-name.git
-cd your-repo-name/sfmc-app
-```
+cd frontend
 
-### 2. Install dependencies
-
-```bash
+# 1. Installer les dépendances
 npm install
-```
 
-### 3. Start the development server
-
-```bash
+# 2. Démarrer le serveur de développement
 npm run dev
 ```
 
-The app will be available at **http://localhost:5173**
+App disponible sur **http://localhost:5173**
 
 ---
 
-## Available Scripts
+## Scripts disponibles
 
-| Command | Description |
-|---|---|
-| `npm run dev` | Start dev server with hot reload |
-| `npm run build` | Build for production (outputs to `dist/`) |
-| `npm run preview` | Preview the production build locally |
+### Backend
+
+| Commande | Description |
+|----------|-------------|
+| `python manage.py runserver` | Serveur de développement |
+| `python manage.py migrate` | Appliquer les migrations DB |
+| `python manage.py shell` | Shell Django interactif |
+| `celery -A config worker -l info` | Worker Celery |
+| `celery -A config beat -l info` | Scheduler Celery Beat |
+
+### Frontend
+
+| Commande | Description |
+|----------|-------------|
+| `npm run dev` | Dev server avec hot reload |
+| `npm run build` | Build production (`dist/`) |
+| `npm run preview` | Preview du build production |
 
 ---
 
-## Project Structure
+## Endpoints API backend
 
-```
-sfmc-app/
-├── public/
-├── src/
-│   ├── components/
-│   │   ├── Header.jsx        # Top bar with search, clock, alerts
-│   │   ├── KPICard.jsx       # Metric cards with trend indicators
-│   │   ├── Sidebar.jsx       # Navigation sidebar
-│   │   └── StatusBadge.jsx   # Colored status pills
-│   ├── data/
-│   │   └── mockData.js       # All mock data (journeys, APIs, alerts...)
-│   ├── pages/
-│   │   ├── Overview.jsx      # Global dashboard
-│   │   ├── JourneyControl.jsx
-│   │   ├── AutomationOps.jsx
-│   │   ├── APIHealthHub.jsx
-│   │   ├── AnomalyCenter.jsx
-│   │   ├── Alerting.jsx
-│   │   ├── Analytics.jsx
-│   │   └── Settings.jsx
-│   ├── App.jsx               # Root component & routing
-│   ├── main.jsx              # Entry point
-│   └── index.css             # Global styles & Tailwind
-├── index.html
-├── tailwind.config.js
-├── vite.config.js
-└── package.json
-```
+| Méthode | Endpoint | Description |
+|---------|----------|-------------|
+| GET | `/api/automations/` | Liste toutes les automations |
+| GET | `/api/automations/{id}/` | Détail d'une automation |
+| GET | `/api/automations/{id}/activities/` | Steps + activités enrichies (SQL, Script, etc.) |
+| GET | `/api/automations/{id}/executions/` | Historique d'exécution depuis ExecutionLog DE |
+| GET | `/api/automations/{id}/kpis/` | KPIs fiabilité, performance, santé |
+| GET | `/api/journeys/` | Liste tous les journeys |
+| GET | `/api/journeys/{id}/executions/` | Runs du journey |
 
 ---
 
 ## Modules
 
 | Module | Description |
-|---|---|
-| **Overview** | Global KPIs, activity chart (24h), system health donut, recent anomalies |
-| **Journey Control** | Journey list with BU/status filters, SLA progress bars |
-| **Automation Ops** | Automation jobs status, delay detection |
-| **API Health Hub** | Per-API latency cards, bar chart comparison, summary table |
-| **Anomaly Center** | Centralized anomaly feed with severity and business impact |
-| **Alerting** | Alert list with escalation tracking, channels, and status |
-| **Analytics Studio** | Performance trend chart, KPI evolution, Business Unit breakdown |
-| **Settings / Rules** | Toggle monitoring rules, SLA config, escalation policy |
+|--------|-------------|
+| **Overview** | KPIs globaux, santé système |
+| **Journey Control** | Liste des journeys avec statut, KPIs, historique de runs |
+| **Automation Ops** | Automations avec steps, activités SQL/Script/Email/FileTransfer, KPIs fiabilité |
+| **API Health Hub** | Latence des APIs SFMC |
+| **Anomaly Center** | Feed d'anomalies centralisé |
+| **Alerting** | Règles d'alertes et escalation |
+| **Analytics Studio** | Tendances de performance |
+| **Settings / Rules** | Configuration du monitoring |
 
 ---
 
-## Design System
+## SFMC — Data Extensions requises
 
-| Token | Value |
-|---|---|
-| Background | `#0B0F19` |
-| Surface | `#0F172A` |
-| Card | `#111827` |
-| Primary | `#6366F1` (Indigo) |
-| Success | `#22C55E` |
-| Warning | `#F59E0B` |
-| Danger | `#EF4444` |
-| Info | `#38BDF8` |
+L'app lit depuis deux DEs dans SFMC :
 
----
+### `ExecutionLog`
+Stocke les runs d'automations et journeys. Remplie par des Query Activities SFMC.
 
-## Build for Production
+| Champ | Type | Remarque |
+|-------|------|----------|
+| `id_log` | Text(36) | **Primary Key** — ID stable (`AutomationInstanceID`) |
+| `sfmc_instance_id` | Text(100) | Clé de groupement |
+| `component_type` | Text(50) | `automation` ou `journey` |
+| `component_id` | Text(100) | SFMC ID du composant |
+| `status` | Text(20) | `success`, `error`, `running` |
+| `start_time` | Date | |
+| `duration_seconds` | Number | |
+| `error_message` | Text(500) | |
 
-```bash
-npm run build
-```
+> ⚠️ `id_log` doit être configuré comme **Primary Key** et la DE en mode **Append** pour un comportement upsert.
 
-Output is in the `dist/` folder — ready to deploy on Vercel, Netlify, or any static host.
-
-### Deploy to Vercel (one command)
-
-```bash
-npx vercel --cwd .
-```
-
-### Deploy to Netlify
-
-```bash
-npx netlify deploy --dir=dist --prod
-```
+### `KPI_Value`
+Stocke les KPIs pré-calculés. Même principe — Primary Key sur `id_value`.
 
 ---
 
-## License
+## Licence
 
 MIT

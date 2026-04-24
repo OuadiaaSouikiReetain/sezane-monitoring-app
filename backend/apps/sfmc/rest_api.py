@@ -20,13 +20,17 @@ def get_automations(search: str = None) -> list[dict]:
 
 def get_automation_detail(sfmc_id: str) -> dict:
     """Détail complet d'une automation avec ses steps et activités."""
-    return sfmc_get(f'/automation/v1/automations/{sfmc_id}')
+    result = sfmc_get(f'/automation/v1/automations/{sfmc_id}')
+    logger.info(f"[AutomationDetail] '{result.get('name')}' — clés API: {sorted(k for k in result.keys() if k not in ('steps',))}")
+    return result
 
 
 def get_automation_schedule(sfmc_id: str) -> dict | None:
     """Schedule d'une automation spécifique."""
     try:
-        return sfmc_get(f'/automation/v1/automations/{sfmc_id}/schedule')
+        result = sfmc_get(f'/automation/v1/automations/{sfmc_id}/schedule')
+        logger.info(f"[Schedule] {sfmc_id} — clés: {sorted(result.keys()) if result else None}")
+        return result
     except Exception:
         return None
 

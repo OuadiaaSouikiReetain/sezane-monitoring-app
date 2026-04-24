@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   X, Cog, Calendar, Clock, Layers, Activity,
   AlertCircle, ChevronRight, RefreshCw,
@@ -6,9 +6,11 @@ import {
   BarChart2, Timer, AlertTriangle, Hash,
   Zap, Heart, Gauge, ArrowUpRight, User, Pause,
   CheckCircle, Minus, Loader2, Database,
+  Folder, Bell, Mail, Tag, Power,
 } from 'lucide-react'
 import { StatusBadge } from '@/shared/components/ui'
-import { useSfmcAutomationDetails } from '../hooks/use-sfmc-automations'
+import { useAutomationActivities }  from '../hooks/use-automation-activities'
+import type { StepDetail, ActivityDetail } from '../hooks/use-automation-activities'
 import { useAutomationKpis }        from '../hooks/use-automation-kpis'
 import { useAutomationExecutions }  from '../hooks/use-automation-executions'
 import { EmailKpiSection }          from '@/shared/components/email-kpi-section'
@@ -18,10 +20,13 @@ import type {
 } from '../hooks/use-automation-kpis'
 import {
   resolveActivityLabel,
+  extractUserName,
   SFMC_STATUS_LABEL,
   type SfmcAutomationEnriched,
-  type SfmcStep,
 } from '../types/automation.types'
+
+const UPDATE_LABEL: Record<number, string> = { 1: 'Append', 2: 'Overwrite', 3: 'Update' }
+function getUpdateLabel(id?: number | null) { return id ? (UPDATE_LABEL[id] ?? `Type ${id}`) : '—' }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -487,9 +492,123 @@ function KpiPill({ icon: Icon, label, value }: { icon: React.ElementType; label:
   )
 }
 
+// ─── Activity row with inline SQL ────────────────────────────────────────────
+
+function ActivityRow({ act }: { act: ActivityDetail }) {
+  const [contentOpen, setContentOpen] = useState(false)
+  const typeLabel  = resolveActivityLabel(act.activityTypeId, act.activityType, act.activityTypeName)
+  const isResolved = !typeLabel.startsWith('Type ') && typeLabel !== 'Unknown'
+  const qd         = act.queryDetail
+  const sd         = act.scriptDetail
+  const ad         = act.activityDetail
+  const hasContent = !!(qd || sd || ad)
+  const hasSQL     = !!qd?.queryText?.trim()
+  const hasScript  = !!sd?.script?.trim()
+  const btnLabel   = qd ? 'SQL' : sd ? 'Script' : 'Details'
+
+  return (
+    <div className="space-y-1">
+      <div className="flex items-center gap-2.5 p-2 rounded-lg bg-bg border border-border hover:border-border-strong transition-colors">
+        <ChevronRight size={10} className="text-ink-faint flex-shrink-0" />
+        <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded border flex-shrink-0
+          ${isResolved ? 'bg-ink text-white border-ink' : 'bg-elevated text-ink-muted border-border'}`}>
+          {typeLabel}
+        </span>
+        <span className="text-[12px] text-ink-sub truncate flex-1">{act.name}</span>
+        {act.isActive === false && (
+          <span className="text-[10px] text-ink-faint flex-shrink-0">inactive</span>
+        )}
+        {hasContent && (
+          <button
+            onClick={() => setContentOpen(v => !v)}
+            className="flex items-center gap-1 text-[10px] text-ink-muted hover:text-ink transition-colors flex-shrink-0 ml-1"
+          >
+            <Database size={10} />
+            {btnLabel}
+            <ChevronRight size={9} className={`transition-transform ${contentOpen ? 'rotate-90' : ''}`} />
+          </button>
+        )}
+      </div>
+
+      {/* SQL Query content */}
+      {qd && contentOpen && (
+        <div className="ml-4 rounded-lg border border-border overflow-hidden">
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-elevated border-b border-border">
+            <Database size={10} className="text-ink-faint flex-shrink-0" />
+            <span className="text-[10px] text-ink-muted">Target DE:</span>
+            <span className="text-[10px] font-semibold text-ink truncate flex-1">{qd.targetDE ?? '—'}</span>
+            <span className="text-[9px] px-1.5 py-0.5 rounded bg-bg border border-border text-ink-faint shrink-0">
+              {getUpdateLabel(qd.targetUpdateTypeId)}
+            </span>
+          </div>
+          {hasSQL ? (
+            <pre className="text-[10px] font-mono text-ink-sub p-3 overflow-x-auto bg-bg leading-relaxed whitespace-pre max-h-56">
+              {qd.queryText!.trim()}
+            </pre>
+          ) : (
+            <p className="text-[10px] text-ink-faint italic px-3 py-2.5 bg-bg">No SQL text returned.</p>
+          )}
+        </div>
+      )}
+
+      {/* Script (SSJS) content */}
+      {sd && contentOpen && (
+        <div className="ml-4 rounded-lg border border-border overflow-hidden">
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-elevated border-b border-border">
+            <Database size={10} className="text-ink-faint flex-shrink-0" />
+            <span className="text-[10px] font-semibold text-ink-muted">SSJS Script</span>
+            {sd.modifiedDate && (
+              <span className="ml-auto text-[9px] text-ink-faint font-mono shrink-0">
+                modified {new Date(sd.modifiedDate).toLocaleDateString('en-GB')}
+              </span>
+            )}
+          </div>
+          {hasScript ? (
+            <pre className="text-[10px] font-mono text-ink-sub p-3 overflow-x-auto bg-bg leading-relaxed whitespace-pre max-h-56">
+              {sd.script!.trim()}
+            </pre>
+          ) : (
+            <p className="text-[10px] text-ink-faint italic px-3 py-2.5 bg-bg">No script content returned.</p>
+          )}
+        </div>
+      )}
+
+      {/* Generic activity detail (Email Send, File Transfer, Import, Data Extract) */}
+      {act.activityDetail && contentOpen && (
+        <div className="ml-4 rounded-lg border border-border overflow-hidden">
+          <div className="divide-y divide-border">
+            {act.activityDetail.fields.map(f => (
+              <div key={f.label} className="flex items-center gap-2 px-3 py-1.5 bg-bg">
+                <span className="text-[10px] text-ink-muted w-28 shrink-0">{f.label}</span>
+                <span className="text-[10px] font-mono text-ink-sub truncate">{f.value}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ─── Steps Timeline ───────────────────────────────────────────────────────────
 
-function StepsTimeline({ steps }: { steps: SfmcStep[] }) {
+function StepsTimeline({ steps, isLoading }: { steps: StepDetail[]; isLoading: boolean }) {
+  if (isLoading) {
+    return (
+      <div className="flex flex-col gap-4 animate-pulse">
+        {[1, 2].map(i => (
+          <div key={i} className="flex gap-4">
+            <div className="w-8 h-8 rounded-full bg-elevated flex-shrink-0" />
+            <div className="flex-1 space-y-2 pt-1">
+              <div className="h-3 bg-elevated rounded w-2/5" />
+              <div className="h-8 bg-bg rounded border border-border" />
+            </div>
+          </div>
+        ))}
+      </div>
+    )
+  }
+
   if (steps.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-8 gap-2">
@@ -498,12 +617,13 @@ function StepsTimeline({ steps }: { steps: SfmcStep[] }) {
       </div>
     )
   }
+
   return (
     <div className="relative">
       {steps.length > 1 && <div className="absolute left-[15px] top-8 bottom-8 w-px bg-border" />}
       <div className="space-y-3">
         {steps.map((step, idx) => {
-          const isLast  = idx === steps.length - 1
+          const isLast = idx === steps.length - 1
           return (
             <div key={step.id} className="relative flex gap-4">
               <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 z-10 text-[12px] font-bold border
@@ -523,24 +643,7 @@ function StepsTimeline({ steps }: { steps: SfmcStep[] }) {
                   <p className="text-[11px] text-ink-faint italic">No activities</p>
                 ) : (
                   <div className="space-y-1.5">
-                    {step.activities.map((act) => {
-                      const typeLabel  = resolveActivityLabel(act.activityTypeId, act.activityType, act.activityTypeName)
-                      const isResolved = !typeLabel.startsWith('Type ') && typeLabel !== 'Unknown'
-                      return (
-                        <div key={act.id}
-                          className="flex items-center gap-2.5 p-2 rounded-lg bg-bg border border-border hover:border-border-strong transition-colors">
-                          <ChevronRight size={10} className="text-ink-faint flex-shrink-0" />
-                          <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded border flex-shrink-0
-                            ${isResolved ? 'bg-ink text-white border-ink' : 'bg-elevated text-ink-muted border-border'}`}>
-                            {typeLabel}
-                          </span>
-                          <span className="text-[12px] text-ink-sub truncate">{act.name}</span>
-                          {act.isActive === false && (
-                            <span className="ml-auto text-[10px] text-ink-faint flex-shrink-0">inactive</span>
-                          )}
-                        </div>
-                      )
-                    })}
+                    {step.activities.map(act => <ActivityRow key={act.id} act={act} />)}
                   </div>
                 )}
               </div>
@@ -560,8 +663,8 @@ interface AutomationDrawerProps {
 }
 
 export function AutomationDrawer({ automation, onClose }: AutomationDrawerProps) {
-  const { automation: detail, isLoading, isError, error, refetch } =
-    useSfmcAutomationDetails(automation?.id ?? '')
+  const { data: activitiesData, isLoading, isError, refetch } =
+    useAutomationActivities(automation?.id)
 
   const { data: kpisResponse, isLoading: kpisLoading } =
     useAutomationKpis(automation?.id)
@@ -577,14 +680,14 @@ export function AutomationDrawer({ automation, onClose }: AutomationDrawerProps)
   }, [onClose])
 
   const isOpen = !!automation
-  const data   = detail ? { ...automation, ...detail } : automation
+  const data   = automation
 
-  const schedule      = data?.startSource?.schedule
-  const scheduleLabel = parseIcal(schedule?.icalRecur) !== '—'
-    ? parseIcal(schedule?.icalRecur)
-    : schedule?.scheduledTime ? fmtDate(schedule.scheduledTime) : '—'
+  const scheduleObj   = activitiesData?.schedule as any ?? data?.startSource?.schedule ?? data?.schedule
+  const scheduleLabel = parseIcal(scheduleObj?.icalRecur) !== '—'
+    ? parseIcal(scheduleObj?.icalRecur)
+    : scheduleObj?.scheduledTime ? fmtDate(scheduleObj.scheduledTime) : '—'
 
-  const steps           = detail?.steps ?? []
+  const steps           = activitiesData?.steps ?? []
   const totalActivities = steps.reduce((s, st) => s + st.activities.length, 0)
 
   const allExecItems = execData?.items ?? []
@@ -598,12 +701,17 @@ export function AutomationDrawer({ automation, onClose }: AutomationDrawerProps)
     )[0]
   const hasError = lastRun?.status === 'error' || lastRun?.status === 'failed'
 
-  // Resolve audit fields — SFMC API may return them as string or nested object
-  const d = data as any
-  const createdBy    = d?.createdBy?.name    ?? d?.createdBy    ?? null
-  const modifiedBy   = d?.modifiedBy?.name   ?? d?.modifiedBy   ?? d?.lastSavedBy?.name ?? d?.lastSavedBy ?? null
-  const lastPausedBy = d?.lastPausedBy?.name ?? d?.lastPausedBy ?? null
-  const lastPausedDate = d?.lastPausedDate   ?? d?.pausedDate   ?? null
+  // Audit fields — typed via schema
+  const createdBy      = extractUserName(data?.createdBy)
+  const modifiedBy     = extractUserName(data?.modifiedBy) ?? extractUserName(data?.lastSavedBy)
+  const lastPausedBy   = extractUserName(data?.lastPausedBy)
+  const lastPausedDate = data?.lastPausedDate ?? data?.pausedDate ?? null
+  const lastSavedDate  = data?.lastSavedDate  ?? null
+
+  // Notifications
+  const notifEmail     = data?.notifications?.email
+  const notifEnabled   = notifEmail?.enabled
+  const notifAddresses = notifEmail?.addresses ?? []
 
   const hkpis      = kpisResponse?.historical_kpis
   const computedAt = kpisResponse?.computed_at
@@ -668,6 +776,7 @@ export function AutomationDrawer({ automation, onClose }: AutomationDrawerProps)
 
             {/* ── Meta ──────────────────────────────────────────────────── */}
             <div className="px-6 pt-4 pb-4 border-b border-border">
+              {/* Pills */}
               <div className="flex gap-2 mb-4">
                 <KpiPill icon={Layers}   label="Steps"      value={isLoading ? '…' : steps.length} />
                 <KpiPill icon={Activity} label="Activities" value={isLoading ? '…' : totalActivities} />
@@ -676,29 +785,63 @@ export function AutomationDrawer({ automation, onClose }: AutomationDrawerProps)
 
               <div className="space-y-2">
                 {([
-                  { icon: Calendar,   label: 'Schedule',      value: scheduleLabel                  },
-                  { icon: Clock,      label: 'Last run',       value: fmtDate(data?.lastRunTime)     },
-                  { icon: User,       label: 'Created by',     value: createdBy                      },
-                  { icon: Hash,       label: 'Created',        value: fmtDate(data?.createdDate)     },
-                  { icon: User,       label: 'Last saved by',  value: modifiedBy                     },
-                  { icon: TrendingUp, label: 'Last saved',     value: fmtDate(data?.modifiedDate)    },
-                  { icon: Pause,      label: 'Last paused by', value: lastPausedBy                   },
-                  { icon: Pause,      label: 'Last paused',    value: fmtDate(lastPausedDate)        },
+                  { icon: Calendar,   label: 'Schedule',       value: scheduleLabel                         },
+                  { icon: Clock,      label: 'Last run',        value: fmtDate(data?.lastRunTime)            },
+                  { icon: Hash,       label: 'Created',         value: fmtDate(data?.createdDate)            },
+                  { icon: User,       label: 'Created by',      value: createdBy                             },
+                  { icon: TrendingUp, label: 'Last saved',      value: fmtDate(data?.lastSavedDate ?? data?.modifiedDate) },
+                  { icon: User,       label: 'Last saved by',   value: modifiedBy                            },
+                  { icon: Pause,      label: 'Last paused',     value: fmtDate(lastPausedDate)               },
+                  { icon: Pause,      label: 'Last paused by',  value: lastPausedBy                          },
+                  { icon: Power,      label: 'Active',          value: data?.isActive != null ? (data.isActive ? 'Yes' : 'No') : null },
+                  { icon: Tag,        label: 'Type',            value: data?.type ?? (data?.typeId ? `Type ${data.typeId}` : null) },
+                  { icon: Folder,     label: 'Category',        value: data?.categoryName ?? (data?.categoryId ? `#${data.categoryId}` : null) },
+                  { icon: Cog,        label: 'Key',             value: data?.key                             },
                 ] as { icon: React.ElementType; label: string; value: string | null | undefined }[])
                   .filter(row => row.value && row.value !== '—')
                   .map(({ icon: Icon, label, value: v }) => (
                     <div key={label} className="flex items-center gap-2 text-[12px]">
                       <Icon size={13} className="text-ink-faint flex-shrink-0" />
-                      <span className="text-ink-muted w-28 shrink-0">{label}</span>
+                      <span className="text-ink-muted w-32 shrink-0">{label}</span>
                       <span className="text-ink-sub font-mono text-[11px] truncate">{v}</span>
                     </div>
                   ))
                 }
-                {data?.key && (
-                  <div className="flex items-center gap-2 text-[12px]">
-                    <Cog size={13} className="text-ink-faint flex-shrink-0" />
-                    <span className="text-ink-muted w-28 shrink-0">Key</span>
-                    <span className="text-ink-sub font-mono text-[11px] truncate">{data.key}</span>
+
+                {/* Schedule dates */}
+                {(scheduleObj?.startDate || scheduleObj?.endDate) && (
+                  <div className="mt-1 ml-5 pl-2 border-l border-border space-y-1">
+                    {scheduleObj.startDate && (
+                      <div className="flex items-center gap-2 text-[11px]">
+                        <span className="text-ink-faint w-28 shrink-0">Start date</span>
+                        <span className="font-mono text-ink-sub">{fmtDate(scheduleObj.startDate)}</span>
+                      </div>
+                    )}
+                    {scheduleObj.endDate && (
+                      <div className="flex items-center gap-2 text-[11px]">
+                        <span className="text-ink-faint w-28 shrink-0">End date</span>
+                        <span className="font-mono text-ink-sub">{fmtDate(scheduleObj.endDate)}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Notifications */}
+                {notifEnabled != null && (
+                  <div className="flex items-start gap-2 text-[12px] pt-1">
+                    <Bell size={13} className="text-ink-faint flex-shrink-0 mt-0.5" />
+                    <span className="text-ink-muted w-32 shrink-0">Notifications</span>
+                    <div className="flex flex-col gap-0.5">
+                      <span className={`text-[11px] font-semibold ${notifEnabled ? 'text-success' : 'text-ink-faint'}`}>
+                        {notifEnabled ? 'Enabled' : 'Disabled'}
+                      </span>
+                      {notifAddresses.map(addr => (
+                        <span key={addr} className="flex items-center gap-1 text-[10px] font-mono text-ink-muted">
+                          <Mail size={9} className="text-ink-faint" />
+                          {addr}
+                        </span>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
@@ -771,7 +914,7 @@ export function AutomationDrawer({ automation, onClose }: AutomationDrawerProps)
                   </button>
                 </div>
               ) : (
-                <StepsTimeline steps={steps} />
+                <StepsTimeline steps={steps} isLoading={isLoading} />
               )}
             </div>
           </div>
